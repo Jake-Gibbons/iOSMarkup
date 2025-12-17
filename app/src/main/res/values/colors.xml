@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="md_theme_primary">#4F378B</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_surface">#F9F9F9</color>
+    <color name="md_theme_surface_variant">#FFFFFF</color>
+    <color name="md_theme_outline">#E0E0E0</color>
+
+    <color name="tool_selected_bg">#E8DEF8</color>
+    <color name="tool_selected_icon">#21005D</color>
+    <color name="tool_unselected_icon">#49454F</color>
+
+    <color name="pen_black">#1C1B1F</color>
+    <color name="pen_red">#B3261E</color>
+    <color name="pen_blue">#2196F3</color>
+    <color name="pen_green">#4CAF50</color>
+</resources>
