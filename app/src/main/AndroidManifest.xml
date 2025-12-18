@@ -16,6 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.IosMarkup"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -24,5 +25,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="Settings"
+            android:theme="@style/Theme.IosMarkup"
+            android:parentActivityName=".MainActivity"/>
+
+        <activity
+            android:name=".PaletteActivity"
+            android:label="Edit Palette"
+            android:theme="@style/Theme.IosMarkup"
+            android:parentActivityName=".SettingsActivity"/>
+
     </application>
 </manifest>

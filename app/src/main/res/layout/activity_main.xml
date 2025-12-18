@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -17,7 +18,6 @@
             android:layout_height="?attr/actionBarSize"
             app:title="Markup"
             app:titleCentered="true"
-            app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:menu="@menu/top_app_bar_menu"
             app:navigationIcon="@android:drawable/ic_menu_gallery" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -64,19 +64,29 @@
                 <View android:layout_width="12dp" android:layout_height="12dp" android:background="@color/tool_unselected_icon" android:backgroundTint="@color/tool_unselected_icon" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/colorContainer"
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnColorBlack" style="@style/Widget.Material3.Button.IconButton" android:layout_width="48dp" android:layout_height="48dp" android:backgroundTint="@color/pen_black" app:strokeWidth="1dp" app:strokeColor="@color/md_theme_outline"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnColorRed" style="@style/Widget.Material3.Button.IconButton" android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:backgroundTint="@color/pen_red" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnColorBlue" style="@style/Widget.Material3.Button.IconButton" android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:backgroundTint="@color/pen_blue" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnColorGreen" style="@style/Widget.Material3.Button.IconButton" android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:backgroundTint="@color/pen_green" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/btnColorCustom" style="@style/Widget.Material3.Button.IconButton" android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:backgroundTint="#F0F0F0" app:icon="@android:drawable/ic_menu_edit" app:iconTint="#000000" />
-            </LinearLayout>
+                android:scrollbars="none"
+                android:overScrollMode="never">
+                <LinearLayout
+                    android:id="@+id/colorContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="20dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnColorCustom"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:backgroundTint="#F0F0F0"
+                        app:icon="@android:drawable/ic_input_add"
+                        app:iconTint="#000000" />
+                </LinearLayout>
+            </HorizontalScrollView>
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
@@ -84,7 +94,6 @@
                 android:layout_marginTop="16dp"
                 android:scrollbars="none"
                 android:overScrollMode="never">
-
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -100,14 +109,16 @@
 
                     <com.google.android.material.button.MaterialButton android:id="@+id/btnText" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_text" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
                     <com.google.android.material.button.MaterialButton android:id="@+id/btnSignature" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_signature" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-
-                    <View android:layout_width="1dp" android:layout_height="32dp" android:layout_gravity="center_vertical" android:background="@color/md_theme_outline" android:layout_marginHorizontal="8dp" />
-
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnShapes" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_shapes" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnShapes" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_shapes" app:iconSize="24dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
                 </LinearLayout>
             </HorizontalScrollView>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

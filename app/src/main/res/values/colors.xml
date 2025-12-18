@@ -5,6 +5,7 @@
     <color name="md_theme_surface">#F9F9F9</color>
     <color name="md_theme_surface_variant">#FFFFFF</color>
     <color name="md_theme_outline">#E0E0E0</color>
+    <color name="md_theme_onSurface">#1C1B1F</color>
 
     <color name="tool_selected_bg">#E8DEF8</color>
     <color name="tool_selected_icon">#21005D</color>
