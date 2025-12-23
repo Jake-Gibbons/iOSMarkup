@@ -3,8 +3,11 @@ package com.example.iosmarkup
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
+import com.google.android.material.color.DynamicColors
 import org.json.JSONArray
 
 /**
@@ -45,7 +48,20 @@ class SettingsRepository(context: Context) {
     fun setAccentColor(color: Int) {
         prefs.edit { putInt(PreferenceKeys.ACCENT_COLOR, color) }
     }
-    
+
+    /**
+     * Apply theme to the given activity
+     * Handles both night mode and Material You dynamic colors
+     */
+    fun applyTheme(activity: AppCompatActivity) {
+        val theme = getTheme()
+        AppCompatDelegate.setDefaultNightMode(theme)
+
+        if (isUsingMaterialYou() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            DynamicColors.applyToActivityIfAvailable(activity)
+        }
+    }
+
     // Canvas Settings
     fun getCanvasBackground(): CanvasBackground {
         val value = prefs.getInt(PreferenceKeys.CANVAS_BG, 0)

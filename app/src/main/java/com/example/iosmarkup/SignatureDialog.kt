@@ -30,9 +30,9 @@ class SignatureDialog(context: Context, private val cb: (Bitmap) -> Unit) : Dial
         signatureView = SignatureView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                500
+                SignatureConstants.DEFAULT_HEIGHT
             )
-            setBackgroundColor(Color.LTGRAY)
+            setBackgroundColor(SignatureConstants.BACKGROUND_COLOR)
         }
         container.addView(signatureView)
 
@@ -67,7 +67,7 @@ class SignatureDialog(context: Context, private val cb: (Bitmap) -> Unit) : Dial
         private val path = Path()
         private val paint = Paint().apply {
             style = Paint.Style.STROKE
-            strokeWidth = 5f
+            strokeWidth = SignatureConstants.DEFAULT_STROKE_WIDTH
             isAntiAlias = true
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND

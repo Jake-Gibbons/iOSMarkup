@@ -39,6 +39,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var paletteRepo: PaletteRepository
     private lateinit var fileOps: FileOperations
 
+    // Cached palette colors for performance optimization
+    private var cachedPaletteColors: List<Int> = emptyList()
+
     // Views
     private lateinit var drawingView: DrawingView
     private lateinit var btnCustomColor: MaterialButton
@@ -122,13 +125,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyTheme() {
-        val theme = settingsRepo.getTheme()
-        AppCompatDelegate.setDefaultNightMode(theme)
-
-        if (settingsRepo.isUsingMaterialYou() &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            DynamicColors.applyToActivityIfAvailable(this)
-        }
+        settingsRepo.applyTheme(this)
     }
 
     private fun initializeViews() {
@@ -145,6 +142,18 @@ class MainActivity : AppCompatActivity() {
         btnText = findViewById(R.id.btnText)
         btnSignature = findViewById(R.id.btnSignature)
         btnShapes = findViewById(R.id.btnShapes)
+
+        // Add accessibility content descriptions
+        btnSelect.contentDescription = "Select tool - tap to select and move objects"
+        btnPen.contentDescription = "Pen tool - draw with solid lines"
+        btnMarker.contentDescription = "Marker tool - draw with semi-transparent strokes"
+        btnEraser.contentDescription = "Eraser tool - tap objects to remove them"
+        btnText.contentDescription = "Text tool - add text to your drawing"
+        btnSignature.contentDescription = "Signature tool - add your signature"
+        btnShapes.contentDescription = "Shapes tool - draw rectangles, ovals, lines, and arrows"
+        strokeSlider.contentDescription = "Stroke width slider - adjust drawing line thickness"
+        drawingView.contentDescription = "Drawing canvas - touch to draw"
+        btnCustomColor.contentDescription = "Add custom color to palette"
     }
 
     private fun setupToolbar() {
@@ -258,13 +267,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshPaletteBar() {
+        val colors = paletteRepo.getColors()
+
+        // Performance optimization: Only refresh if colors actually changed
+        if (colors == cachedPaletteColors) {
+            return
+        }
+
+        cachedPaletteColors = colors
+
         // Remove all color buttons except the custom button
         val childCount = colorContainer.childCount
         if (childCount > 1) {
             colorContainer.removeViews(0, childCount - 1)
         }
 
-        val colors = paletteRepo.getColors()
+        // Add color buttons
         for (color in colors) {
             val button = createColorButton(color)
             // Add before the custom color button
@@ -288,6 +306,10 @@ class MainActivity : AppCompatActivity() {
             insetBottom = 0
             strokeWidth = dp(UIConstants.COLOR_BUTTON_STROKE_WIDTH)
             strokeColor = ColorStateList.valueOf(Color.LTGRAY)
+
+            // Accessibility
+            val hexColor = String.format("#%06X", (0xFFFFFF and color))
+            contentDescription = "Color $hexColor - tap to select, long press to remove"
 
             setOnClickListener {
                 drawingView.setColor(color)
@@ -375,10 +397,15 @@ class MainActivity : AppCompatActivity() {
             .setView(input)
             .setPositiveButton("Add") { _, _ ->
                 val text = input.text.toString().trim()
-                if (text.isNotEmpty()) {
-                    if (text.length > 100) {
-                        showToast("Text too long (max 100 characters)")
-                    } else {
+                when {
+                    text.isEmpty() -> showToast("Text cannot be empty")
+                    text.length > ValidationConstants.MAX_TEXT_LENGTH -> {
+                        showToast("Text too long (max ${ValidationConstants.MAX_TEXT_LENGTH} characters)")
+                    }
+                    text.contains(Regex("[\\p{C}]")) -> {
+                        showToast("Text contains invalid control characters")
+                    }
+                    else -> {
                         drawingView.addText(text)
                         drawingView.setTool(ToolType.SELECT)
                         updateToolUI(btnSelect)
@@ -458,8 +485,14 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Custom Color")
             .setView(layout)
             .setPositiveButton("Add") { _, _ ->
+                val colorStr = hexInput.text.toString().trim()
+                // Validate hex color format (#RRGGBB or #AARRGGBB)
+                if (!colorStr.matches(Regex("^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{8}$"))) {
+                    showToast("Invalid color format. Use #RRGGBB or #AARRGGBB")
+                    return@setPositiveButton
+                }
+
                 try {
-                    val colorStr = hexInput.text.toString()
                     val color = Color.parseColor(colorStr)
                     paletteRepo.addColor(color)
                     refreshPaletteBar()
@@ -505,24 +538,29 @@ class MainActivity : AppCompatActivity() {
     private fun saveImage() {
         lifecycleScope.launch {
             val bitmap = drawingView.getBitmap()
-            val format = settingsRepo.getExportFormat()
-            val location = settingsRepo.getSaveLocation()
+            try {
+                val format = settingsRepo.getExportFormat()
+                val location = settingsRepo.getSaveLocation()
 
-            showToast("Saving...")
+                showToast("Saving...")
 
-            when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
-                is SaveResult.Success -> {
-                    showToast("Saved: ${result.filePath}")
-                }
-                is SaveResult.Error -> {
-                    val message = fileOps.getSaveErrorMessage(result)
-                    showToast(message)
+                when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
+                    is SaveResult.Success -> {
+                        showToast("Saved: ${result.filePath}")
+                    }
+                    is SaveResult.Error -> {
+                        val message = fileOps.getSaveErrorMessage(result)
+                        showToast(message)
 
-                    // If permission error, offer to request permissions
-                    if (result is SaveResult.Error.NoPermission) {
-                        showPermissionRationaleDialog()
+                        // If permission error, offer to request permissions
+                        if (result is SaveResult.Error.NoPermission) {
+                            showPermissionRationaleDialog()
+                        }
                     }
                 }
+            } finally {
+                // Always recycle bitmap to prevent memory leaks
+                bitmap.recycle()
             }
         }
     }
@@ -533,20 +571,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        }
-
-        val needsPermission = permissions.any {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (needsPermission) {
+        if (PermissionHelper.needsStoragePermissions(this)) {
             // Don't request on first launch, wait until user tries to save
             Log.d(LogTags.MAIN_ACTIVITY, "Permissions not granted yet")
         }
@@ -564,20 +589,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        }
-
-        permissionLauncher.launch(permissions)
+        permissionLauncher.launch(PermissionHelper.getStoragePermissions())
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        // Use Snackbar instead of Toast for Material 3 compliance
+        com.google.android.material.snackbar.Snackbar.make(
+            findViewById(android.R.id.content),
+            message,
+            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     private fun dp(value: Int): Int {

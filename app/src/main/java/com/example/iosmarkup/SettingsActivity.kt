@@ -63,13 +63,7 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun applyTheme() {
-        val theme = settingsRepo.getTheme()
-        AppCompatDelegate.setDefaultNightMode(theme)
-        
-        if (settingsRepo.isUsingMaterialYou() && 
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            DynamicColors.applyToActivityIfAvailable(this)
-        }
+        settingsRepo.applyTheme(this)
     }
     
     private fun setupToolbar() {
@@ -156,10 +150,10 @@ class SettingsActivity : AppCompatActivity() {
             accentContainer.alpha = if (isChecked) 0.5f else 1.0f
             
             // Show restart message
-            Toast.makeText(
-                this, 
-                "Restart app to apply Material You", 
-                Toast.LENGTH_SHORT
+            com.google.android.material.snackbar.Snackbar.make(
+                findViewById(android.R.id.content),
+                "Restart app to apply Material You",
+                com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
             ).show()
         }
         
@@ -197,10 +191,10 @@ class SettingsActivity : AppCompatActivity() {
             setOnClickListener {
                 if (!settingsRepo.isUsingMaterialYou()) {
                     settingsRepo.setAccentColor(color)
-                    Toast.makeText(
-                        this@SettingsActivity,
+                    com.google.android.material.snackbar.Snackbar.make(
+                        findViewById(android.R.id.content),
                         "Accent color updated",
-                        Toast.LENGTH_SHORT
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
                     ).show()
                     
                     // Refresh accent buttons
@@ -311,29 +305,11 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun requestStoragePermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        }
-        requestPermissionLauncher.launch(permissions)
+        requestPermissionLauncher.launch(PermissionHelper.getStoragePermissions())
     }
-    
+
     private fun checkPermissions() {
-        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-        }
-        
-        val isGranted = ContextCompat.checkSelfPermission(
-            this, 
-            permission
-        ) == PackageManager.PERMISSION_GRANTED
-        
+        val isGranted = PermissionHelper.hasPrimaryStoragePermission(this)
         btnRequestPermission.isEnabled = !isGranted
         btnRequestPermission.text = if (isGranted) "Granted" else "Grant Permission"
     }

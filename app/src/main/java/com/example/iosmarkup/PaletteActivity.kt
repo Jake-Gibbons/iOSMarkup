@@ -19,11 +19,13 @@ import java.util.Collections
 class PaletteActivity : AppCompatActivity() {
     private lateinit var adapter: ColorAdapter
     private var colorList = mutableListOf<Int>()
+    private lateinit var paletteRepo: PaletteRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_palette)
-        colorList = PaletteManager.getColors(this)
+        paletteRepo = PaletteRepository(this)
+        colorList = paletteRepo.getColors()
         findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
 
         val rv = findViewById<RecyclerView>(R.id.recyclerView)
@@ -35,9 +37,9 @@ class PaletteActivity : AppCompatActivity() {
                 Collections.swap(colorList, s.adapterPosition, t.adapterPosition); adapter.notifyItemMoved(s.adapterPosition, t.adapterPosition); return true
             }
             override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
-                colorList.removeAt(v.adapterPosition); adapter.notifyItemRemoved(v.adapterPosition); PaletteManager.saveColors(this@PaletteActivity, colorList)
+                colorList.removeAt(v.adapterPosition); adapter.notifyItemRemoved(v.adapterPosition); paletteRepo.saveColors(colorList)
             }
-            override fun clearView(r: RecyclerView, v: RecyclerView.ViewHolder) { super.clearView(r, v); PaletteManager.saveColors(this@PaletteActivity, colorList) }
+            override fun clearView(r: RecyclerView, v: RecyclerView.ViewHolder) { super.clearView(r, v); paletteRepo.saveColors(colorList) }
         }).attachToRecyclerView(rv)
 
         findViewById<FloatingActionButton>(R.id.fabAddColor).setOnClickListener {
@@ -45,7 +47,7 @@ class PaletteActivity : AppCompatActivity() {
             val picker = ColorPickerView(this)
             var c = Color.BLACK
             picker.onColorChanged = { c = it }
-            AlertDialog.Builder(this).setView(picker).setPositiveButton("Add") { _,_ -> colorList.add(c); adapter.notifyItemInserted(colorList.size-1); PaletteManager.saveColors(this, colorList) }.show()
+            AlertDialog.Builder(this).setView(picker).setPositiveButton("Add") { _,_ -> colorList.add(c); adapter.notifyItemInserted(colorList.size-1); paletteRepo.saveColors(colorList) }.show()
         }
     }
 

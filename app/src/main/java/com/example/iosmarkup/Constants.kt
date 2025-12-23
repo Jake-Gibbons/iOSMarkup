@@ -93,3 +93,15 @@ object LogTags {
     const val SETTINGS = "SettingsActivity"
     const val FILE_OPS = "FileOperations"
 }
+
+object SignatureConstants {
+    const val DEFAULT_HEIGHT = 500
+    const val DEFAULT_STROKE_WIDTH = 5f
+    const val BACKGROUND_COLOR = Color.LTGRAY
+}
+
+object ValidationConstants {
+    const val MIN_STROKE_WIDTH = 1f
+    const val MAX_STROKE_WIDTH = 100f
+    const val MAX_TEXT_LENGTH = 100
+}

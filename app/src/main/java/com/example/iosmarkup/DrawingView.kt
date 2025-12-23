@@ -25,6 +25,7 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import java.util.Collections
 
 /**
  * Custom drawing view with proper memory management and clean architecture
@@ -161,9 +162,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     var isShapeFilled = false
     
     // Drawing objects management
-    private val drawingObjects = ArrayList<DrawingObject>()
-    private val undoStack = ArrayList<DrawingObject>()
-    private val redoStack = ArrayList<DrawingObject>()
+    private val drawingObjects = Collections.synchronizedList(ArrayList<DrawingObject>())
+    private val undoStack = Collections.synchronizedList(ArrayList<DrawingObject>())
+    private val redoStack = Collections.synchronizedList(ArrayList<DrawingObject>())
     
     // Selection
     private var selectedObject: DrawingObject? = null
@@ -270,18 +271,20 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         
         // Draw all objects
-        for (obj in drawingObjects) {
-            // TODO: Add culling optimization for off-screen objects
-            canvas.save()
-            canvas.concat(obj.matrix)
-            obj.drawContent(canvas)
-            
-            // Draw selection indicator
-            if (obj == selectedObject) {
-                drawSelectionIndicator(canvas, obj)
+        synchronized(drawingObjects) {
+            for (obj in drawingObjects) {
+                // TODO: Add culling optimization for off-screen objects
+                canvas.save()
+                canvas.concat(obj.matrix)
+                obj.drawContent(canvas)
+
+                // Draw selection indicator
+                if (obj == selectedObject) {
+                    drawSelectionIndicator(canvas, obj)
+                }
+
+                canvas.restore()
             }
-            
-            canvas.restore()
         }
         
         // Draw current path (while drawing)
@@ -368,20 +371,24 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
     
     private fun eraseObjectAt(x: Float, y: Float) {
-        val iterator = drawingObjects.listIterator(drawingObjects.size)
-        while (iterator.hasPrevious()) {
-            val obj = iterator.previous()
-            if (obj.contains(x, y)) {
-                obj.recycle()
-                iterator.remove()
-                notifyStateChanged()
-                break
+        synchronized(drawingObjects) {
+            val iterator = drawingObjects.listIterator(drawingObjects.size)
+            while (iterator.hasPrevious()) {
+                val obj = iterator.previous()
+                if (obj.contains(x, y)) {
+                    obj.recycle()
+                    iterator.remove()
+                    notifyStateChanged()
+                    break
+                }
             }
         }
     }
-    
+
     private fun selectObjectAt(x: Float, y: Float) {
-        selectedObject = drawingObjects.findLast { it.contains(x, y) }
+        synchronized(drawingObjects) {
+            selectedObject = drawingObjects.findLast { it.contains(x, y) }
+        }
     }
     
     private fun startShapeDrag(x: Float, y: Float) {
@@ -558,7 +565,10 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
     
     fun setStrokeWidth(width: Float) {
-        currentStrokeWidth = width
+        currentStrokeWidth = width.coerceIn(
+            ValidationConstants.MIN_STROKE_WIDTH,
+            ValidationConstants.MAX_STROKE_WIDTH
+        )
         notifyStateChanged()
     }
     
@@ -613,7 +623,28 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         addDrawingObject(imageItem)
         invalidate()
     }
-    
+
+    /**
+     * Creates a bitmap snapshot of the current canvas state.
+     *
+     * IMPORTANT - Memory Management:
+     * The caller is responsible for recycling the returned bitmap when it's no longer needed.
+     * The bitmap is a new copy and independent of the canvas state.
+     *
+     * Usage Example:
+     * ```kotlin
+     * val bitmap = drawingView.getBitmap()
+     * try {
+     *     // Use the bitmap
+     *     saveToFile(bitmap)
+     * } finally {
+     *     // Always recycle when done
+     *     bitmap.recycle()
+     * }
+     * ```
+     *
+     * @return A new bitmap containing the current canvas content (including background and all drawing objects)
+     */
     fun getBitmap(): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -625,14 +656,16 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             val top = (height - it.height) / 2f
             canvas.drawBitmap(it, left, top, null)
         }
-        
-        for (obj in drawingObjects) {
-            canvas.save()
-            canvas.concat(obj.matrix)
-            obj.drawContent(canvas)
-            canvas.restore()
+
+        synchronized(drawingObjects) {
+            for (obj in drawingObjects) {
+                canvas.save()
+                canvas.concat(obj.matrix)
+                obj.drawContent(canvas)
+                canvas.restore()
+            }
         }
-        
+
         return bitmap
     }
     
@@ -690,11 +723,19 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         // Clean up resources
         backgroundBitmap?.recycle()
         backgroundBitmap = null
-        
-        drawingObjects.forEach { it.recycle() }
-        drawingObjects.clear()
-        undoStack.forEach { it.recycle() }
-        undoStack.clear()
+
+        synchronized(drawingObjects) {
+            drawingObjects.forEach { it.recycle() }
+            drawingObjects.clear()
+        }
+        synchronized(undoStack) {
+            undoStack.forEach { it.recycle() }
+            undoStack.clear()
+        }
+        synchronized(redoStack) {
+            redoStack.forEach { it.recycle() }
+            redoStack.clear()
+        }
     }
     
     companion object {

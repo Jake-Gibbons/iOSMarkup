@@ -24,17 +24,14 @@ class FileOperations(private val context: Context) {
      */
     suspend fun loadImage(uri: Uri): LoadResult = withContext(Dispatchers.IO) {
         try {
-            val stream = context.contentResolver.openInputStream(uri)
-                ?: return@withContext LoadResult.Error.FileNotFound
-            
-            val bitmap = BitmapFactory.decodeStream(stream)
-            stream.close()
-            
-            if (bitmap == null) {
-                LoadResult.Error.InvalidFormat
-            } else {
-                LoadResult.Success(bitmap)
-            }
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val bitmap = BitmapFactory.decodeStream(stream)
+                return@withContext if (bitmap == null) {
+                    LoadResult.Error.InvalidFormat
+                } else {
+                    LoadResult.Success(bitmap)
+                }
+            } ?: return@withContext LoadResult.Error.FileNotFound
         } catch (e: OutOfMemoryError) {
             Log.e(LogTags.FILE_OPS, "Out of memory loading image", e)
             LoadResult.Error.OutOfMemory
