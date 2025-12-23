@@ -4,78 +4,351 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/md_theme_surface">
+    android:background="?attr/colorSurface">
 
+    <!-- App Bar with primary color that extends to status bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        android:background="?attr/colorPrimary">
+        
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/settingsToolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Settings"
+            app:titleTextColor="?attr/colorOnPrimary"
             app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
-            android:background="@color/md_theme_surface" />
+            app:navigationIconTint="?attr/colorOnPrimary"
+            android:background="?attr/colorPrimary" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+    <ScrollView 
+        android:layout_width="match_parent" 
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+        
+        <LinearLayout 
+            android:layout_width="match_parent" 
+            android:layout_height="wrap_content" 
+            android:orientation="vertical" 
+            android:padding="16dp">
 
-            <TextView android:text="App Theme" android:textStyle="bold" android:textColor="@color/md_theme_primary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="16dp"/>
-            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:strokeWidth="0dp" app:cardBackgroundColor="@color/md_theme_surface_variant">
-                <RadioGroup android:id="@+id/radioGroupTheme" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
-                    <RadioButton android:id="@+id/radioThemeSystem" android:text="System Default" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                    <RadioButton android:id="@+id/radioThemeLight" android:text="Light Mode" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                    <RadioButton android:id="@+id/radioThemeDark" android:text="Dark Mode" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <!-- App Theme Section -->
+            <TextView 
+                android:text="App Theme" 
+                android:textStyle="bold" 
+                android:textColor="?attr/colorPrimary" 
+                android:textSize="14sp"
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginBottom="8dp"/>
+            
+            <com.google.android.material.card.MaterialCardView 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                app:cardCornerRadius="12dp" 
+                app:strokeWidth="0dp" 
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                android:layout_marginBottom="24dp">
+                
+                <RadioGroup 
+                    android:id="@+id/radioGroupTheme" 
+                    android:layout_width="match_parent" 
+                    android:layout_height="wrap_content" 
+                    android:padding="16dp">
+                    
+                    <RadioButton 
+                        android:id="@+id/radioThemeSystem" 
+                        android:text="System Default" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
+                    
+                    <RadioButton 
+                        android:id="@+id/radioThemeLight" 
+                        android:text="Light Mode" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
+                    
+                    <RadioButton 
+                        android:id="@+id/radioThemeDark" 
+                        android:text="Dark Mode" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
                 </RadioGroup>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView android:text="Styling" android:textStyle="bold" android:textColor="@color/md_theme_primary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:layout_marginBottom="16dp"/>
-            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:strokeWidth="0dp" app:cardBackgroundColor="@color/md_theme_surface_variant">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchMaterialYou" android:text="Use Material You" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                    <TextView android:id="@+id/tvAccentLabel" android:text="Accent Color" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:layout_marginBottom="8dp"/>
-                    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
-                        <LinearLayout android:id="@+id/accentColorContainer" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"/>
+            <!-- Styling Section -->
+            <TextView 
+                android:text="Styling" 
+                android:textStyle="bold" 
+                android:textColor="?attr/colorPrimary" 
+                android:textSize="14sp"
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginBottom="8dp"/>
+            
+            <com.google.android.material.card.MaterialCardView 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                app:cardCornerRadius="12dp" 
+                app:strokeWidth="0dp" 
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout 
+                    android:layout_width="match_parent" 
+                    android:layout_height="wrap_content" 
+                    android:orientation="vertical" 
+                    android:padding="16dp">
+                    
+                    <com.google.android.material.materialswitch.MaterialSwitch 
+                        android:id="@+id/switchMaterialYou" 
+                        android:text="Use Material You" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
+                    
+                    <TextView 
+                        android:id="@+id/tvAccentLabel" 
+                        android:text="Accent Color" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content" 
+                        android:layout_marginTop="16dp" 
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <HorizontalScrollView 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content" 
+                        android:scrollbars="none">
+                        
+                        <LinearLayout 
+                            android:id="@+id/accentColorContainer" 
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content" 
+                            android:orientation="horizontal"/>
                     </HorizontalScrollView>
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnCustomizePalette" style="@style/Widget.Material3.Button.OutlinedButton" android:text="Edit Drawing Palette" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" app:icon="@android:drawable/ic_menu_edit" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnCustomizePalette" 
+                        style="@style/Widget.Material3.Button.OutlinedButton" 
+                        android:text="Edit Drawing Palette" 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content" 
+                        android:layout_marginTop="16dp" 
+                        app:icon="@android:drawable/ic_menu_edit" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView android:text="Canvas &amp; Storage" android:textStyle="bold" android:textColor="@color/md_theme_primary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:layout_marginBottom="16dp"/>
-            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:strokeWidth="0dp" app:cardBackgroundColor="@color/md_theme_surface_variant">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                    <RadioGroup android:id="@+id/radioGroupBackground" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
-                        <RadioButton android:id="@+id/radioBgWhite" android:text="White" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
-                        <RadioButton android:id="@+id/radioBgPaper" android:text="Paper" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
-                        <RadioButton android:id="@+id/radioBgDark" android:text="Dark" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
+            <!-- Canvas & Storage Section -->
+            <TextView 
+                android:text="Canvas &amp; Storage" 
+                android:textStyle="bold" 
+                android:textColor="?attr/colorPrimary" 
+                android:textSize="14sp"
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginBottom="8dp"/>
+            
+            <com.google.android.material.card.MaterialCardView 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                app:cardCornerRadius="12dp" 
+                app:strokeWidth="0dp" 
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout 
+                    android:layout_width="match_parent" 
+                    android:layout_height="wrap_content" 
+                    android:orientation="vertical" 
+                    android:padding="16dp">
+                    
+                    <TextView 
+                        android:text="Canvas Background" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content" 
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <RadioGroup 
+                        android:id="@+id/radioGroupBackground" 
+                        android:orientation="horizontal" 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content" 
+                        android:layout_marginBottom="16dp">
+                        
+                        <RadioButton 
+                            android:id="@+id/radioBgWhite" 
+                            android:text="White" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_weight="1" 
+                            android:layout_width="0dp" 
+                            android:layout_height="wrap_content"/>
+                        
+                        <RadioButton 
+                            android:id="@+id/radioBgPaper" 
+                            android:text="Paper" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_weight="1" 
+                            android:layout_width="0dp" 
+                            android:layout_height="wrap_content"/>
+                        
+                        <RadioButton 
+                            android:id="@+id/radioBgDark" 
+                            android:text="Dark" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_weight="1" 
+                            android:layout_width="0dp" 
+                            android:layout_height="wrap_content"/>
                     </RadioGroup>
-                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchGridLines" android:text="Grid Lines" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchKeepScreenOn" android:text="Keep Screen On" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    
+                    <com.google.android.material.materialswitch.MaterialSwitch 
+                        android:id="@+id/switchGridLines" 
+                        android:text="Grid Lines" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
+                    
+                    <com.google.android.material.materialswitch.MaterialSwitch 
+                        android:id="@+id/switchKeepScreenOn" 
+                        android:text="Keep Screen On" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"/>
 
-                    <TextView android:text="Save Location" android:textStyle="bold" android:layout_marginTop="12dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    <RadioGroup android:id="@+id/radioGroupStorage" android:layout_width="match_parent" android:layout_height="wrap_content">
-                        <RadioButton android:id="@+id/radioSavePictures" android:text="Pictures" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <RadioButton android:id="@+id/radioSaveDownloads" android:text="Downloads" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <TextView 
+                        android:text="Save Location" 
+                        android:textStyle="bold" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" 
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <RadioGroup 
+                        android:id="@+id/radioGroupStorage" 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
+                        
+                        <RadioButton 
+                            android:id="@+id/radioSavePictures" 
+                            android:text="Pictures" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content"/>
+                        
+                        <RadioButton 
+                            android:id="@+id/radioSaveDownloads" 
+                            android:text="Downloads" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content"/>
                     </RadioGroup>
 
-                    <TextView android:text="Export Format" android:textStyle="bold" android:layout_marginTop="12dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    <RadioGroup android:id="@+id/radioGroupFormat" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
-                        <RadioButton android:id="@+id/radioPng" android:text="PNG" android:layout_marginEnd="16dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <RadioButton android:id="@+id/radioJpeg" android:text="JPEG" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <TextView 
+                        android:text="Export Format" 
+                        android:textStyle="bold" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" 
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <RadioGroup 
+                        android:id="@+id/radioGroupFormat" 
+                        android:orientation="horizontal" 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
+                        
+                        <RadioButton 
+                            android:id="@+id/radioPng" 
+                            android:text="PNG" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_marginEnd="16dp" 
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content"/>
+                        
+                        <RadioButton 
+                            android:id="@+id/radioJpeg" 
+                            android:text="JPEG" 
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_width="wrap_content" 
+                            android:layout_height="wrap_content"/>
                     </RadioGroup>
 
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRequestPermission" style="@style/Widget.Material3.Button.TonalButton" android:text="Check Permissions" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"/>
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnRequestPermission" 
+                        style="@style/Widget.Material3.Button.TonalButton" 
+                        android:text="Check Permissions" 
+                        android:layout_width="match_parent" 
+                        android:layout_height="wrap_content"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButton android:id="@+id/btnClearCanvas" style="@style/Widget.Material3.Button.TonalButton" android:text="Clear Canvas" android:textColor="@color/pen_red" app:backgroundTint="#FCE8E8" app:icon="@drawable/ic_tool_eraser" app:iconTint="@color/pen_red" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginTop="32dp"/>
+            <!-- Clear Canvas Button -->
+            <com.google.android.material.button.MaterialButton 
+                android:id="@+id/btnClearCanvas" 
+                style="@style/Widget.Material3.Button.TonalButton" 
+                android:text="Clear Canvas" 
+                android:textColor="@color/pen_red" 
+                app:backgroundTint="@color/md_theme_errorContainer" 
+                app:icon="@drawable/ic_tool_eraser" 
+                app:iconTint="@color/pen_red" 
+                android:layout_width="match_parent" 
+                android:layout_height="56dp" 
+                android:layout_marginBottom="24dp"/>
 
-            <TextView android:text="About" android:textStyle="bold" android:textColor="@color/md_theme_primary" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:layout_marginBottom="16dp"/>
-            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:strokeWidth="0dp" app:cardBackgroundColor="@color/md_theme_surface_variant">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                    <TextView android:id="@+id/tvVersionInfo" android:text="Version 1.0" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    <TextView android:id="@+id/tvBuildNumber" android:text="Build 1" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <!-- About Section -->
+            <TextView 
+                android:text="About" 
+                android:textStyle="bold" 
+                android:textColor="?attr/colorPrimary" 
+                android:textSize="14sp"
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginBottom="8dp"/>
+            
+            <com.google.android.material.card.MaterialCardView 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                app:cardCornerRadius="12dp" 
+                app:strokeWidth="0dp" 
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                android:layout_marginBottom="16dp">
+                
+                <LinearLayout 
+                    android:layout_width="match_parent" 
+                    android:layout_height="wrap_content" 
+                    android:orientation="vertical" 
+                    android:padding="16dp">
+                    
+                    <TextView 
+                        android:id="@+id/tvVersionInfo" 
+                        android:text="Version 1.0" 
+                        android:textStyle="bold" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content"/>
+                    
+                    <TextView 
+                        android:id="@+id/tvBuildNumber" 
+                        android:text="Build 1" 
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

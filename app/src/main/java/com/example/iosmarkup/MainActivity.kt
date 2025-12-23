@@ -1,46 +1,52 @@
 package com.example.iosmarkup
 
-import android.app.AlertDialog
-import android.content.ContentValues
-import android.content.Context
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
-import android.text.Editable
-import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupMenu
-import android.widget.SeekBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.DynamicColors
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
+import kotlinx.coroutines.launch
 
+/**
+ * Improved MainActivity with proper architecture, error handling, and memory management
+ * Compatible with existing menu resources
+ */
 class MainActivity : AppCompatActivity() {
 
+    // Repositories
+    private lateinit var settingsRepo: SettingsRepository
+    private lateinit var paletteRepo: PaletteRepository
+    private lateinit var fileOps: FileOperations
+
+    // Views
     private lateinit var drawingView: DrawingView
     private lateinit var btnCustomColor: MaterialButton
     private lateinit var colorContainer: LinearLayout
+    private lateinit var toolbar: MaterialToolbar
+    private lateinit var strokeSlider: Slider
 
-    // Tools
+    // Tool buttons
     private lateinit var btnSelect: MaterialButton
     private lateinit var btnPen: MaterialButton
     private lateinit var btnMarker: MaterialButton
@@ -49,31 +55,64 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSignature: MaterialButton
     private lateinit var btnShapes: MaterialButton
 
-    private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    // Activity result launchers
+    private val settingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         if (result.resultCode == RESULT_OK) {
             val action = result.data?.getStringExtra("ACTION")
             if (action == "CLEAR_CANVAS") {
                 drawingView.clearCanvas()
-                Toast.makeText(this, "Canvas Cleared", Toast.LENGTH_SHORT).show()
+                showToast("Canvas Cleared")
             }
         }
         applySettings()
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        val prefs = getSharedPreferences("MarkupSettings", Context.MODE_PRIVATE)
-        val themeMode = prefs.getInt("APP_THEME", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        AppCompatDelegate.setDefaultNightMode(themeMode)
-        if (prefs.getBoolean("USE_MATERIAL_YOU", false) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            DynamicColors.applyToActivityIfAvailable(this)
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { loadImage(it) }
+    }
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.values.all { it }
+        if (granted) {
+            showToast("Permissions granted")
+        } else {
+            showToast("Permissions required to save images")
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Initialize repositories
+        settingsRepo = SettingsRepository(this)
+        paletteRepo = PaletteRepository(this)
+        fileOps = FileOperations(this)
+
+        // Apply theme before super.onCreate
+        applyTheme()
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        drawingView = findViewById(R.id.drawingView)
-        setupUI()
+        // Initialize views
+        initializeViews()
+
+        // Setup UI
+        setupToolbar()
+        setupDrawingView()
+        setupTools()
+        setupColorPalette()
+        setupStrokeSlider()
+
+        // Apply settings
         applySettings()
+
+        // Request permissions if needed
+        checkAndRequestPermissions()
     }
 
     override fun onResume() {
@@ -82,59 +121,22 @@ class MainActivity : AppCompatActivity() {
         refreshPaletteBar()
     }
 
-    private fun applySettings() {
-        val prefs = getSharedPreferences("MarkupSettings", Context.MODE_PRIVATE)
+    private fun applyTheme() {
+        val theme = settingsRepo.getTheme()
+        AppCompatDelegate.setDefaultNightMode(theme)
 
-        // 1. Background
-        when(prefs.getInt("CANVAS_BG", 0)) {
-            0 -> drawingView.setCanvasColor(Color.WHITE)
-            1 -> drawingView.setCanvasColor(Color.parseColor("#FFF8E1"))
-            2 -> drawingView.setCanvasColor(Color.parseColor("#121212"))
-        }
-
-        // 2. Screen On
-        if (prefs.getBoolean("KEEP_SCREEN_ON", false)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        // 3. Grid
-        drawingView.setShowGrid(prefs.getBoolean("SHOW_GRID", false))
-
-        // 4. Accent Color
-        val toolbar = findViewById<MaterialToolbar>(R.id.topAppBar)
-        if (!prefs.getBoolean("USE_MATERIAL_YOU", false)) {
-            val accent = prefs.getInt("ACCENT_COLOR", Color.parseColor("#4F378B"))
-            toolbar.setBackgroundColor(accent)
-            toolbar.setTitleTextColor(Color.WHITE)
-            toolbar.navigationIcon?.setTint(Color.WHITE)
+        if (settingsRepo.isUsingMaterialYou() &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            DynamicColors.applyToActivityIfAvailable(this)
         }
     }
 
-    private fun setupUI() {
-        val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBar)
-        val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                try {
-                    val stream = contentResolver.openInputStream(it)
-                    val bitmap = BitmapFactory.decodeStream(stream)
-                    drawingView.setImage(bitmap)
-                } catch (e: Exception) { Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show() }
-            }
-        }
-        topAppBar.setNavigationOnClickListener { getContent.launch("image/*") }
-        topAppBar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_undo -> { drawingView.undo(); true }
-                R.id.action_save -> { saveImageToGallery(drawingView.getBitmap()); true }
-                R.id.action_settings -> { settingsLauncher.launch(Intent(this, SettingsActivity::class.java)); true }
-                else -> false
-            }
-        }
-
-        findViewById<Slider>(R.id.strokeSlider).addOnChangeListener { _, value, _ -> drawingView.setStrokeWidth(value) }
-
+    private fun initializeViews() {
+        drawingView = findViewById(R.id.drawingView)
+        toolbar = findViewById(R.id.topAppBar)
+        strokeSlider = findViewById(R.id.strokeSlider)
         colorContainer = findViewById(R.id.colorContainer)
         btnCustomColor = findViewById(R.id.btnColorCustom)
-        btnCustomColor.setOnClickListener { showColorPicker() }
 
         btnSelect = findViewById(R.id.btnSelect)
         btnPen = findViewById(R.id.btnPen)
@@ -143,143 +145,442 @@ class MainActivity : AppCompatActivity() {
         btnText = findViewById(R.id.btnText)
         btnSignature = findViewById(R.id.btnSignature)
         btnShapes = findViewById(R.id.btnShapes)
+    }
 
-        btnSelect.setOnClickListener { drawingView.setTool(DrawingView.ToolType.SELECT); updateToolUI(btnSelect) }
-        btnPen.setOnClickListener { drawingView.setTool(DrawingView.ToolType.PEN); updateToolUI(btnPen) }
-        btnMarker.setOnClickListener { drawingView.setTool(DrawingView.ToolType.MARKER); updateToolUI(btnMarker) }
-        btnEraser.setOnClickListener { drawingView.setTool(DrawingView.ToolType.ERASER); updateToolUI(btnEraser) }
-        btnText.setOnClickListener { addTextFlow(); updateToolUI(btnText) }
-        btnSignature.setOnClickListener { SignatureDialog(this) { bmp -> drawingView.addSignature(bmp); drawingView.setTool(DrawingView.ToolType.SELECT); updateToolUI(btnSelect) }.show() }
-
-        btnShapes.setOnClickListener { view ->
-            val popup = PopupMenu(this, view)
-            popup.menu.add(0, 1, 0, "Rectangle (Outline)").setIcon(R.drawable.ic_tool_shapes)
-            popup.menu.add(0, 2, 0, "Rectangle (Filled)").setIcon(R.drawable.ic_tool_shapes)
-            popup.menu.add(0, 3, 0, "Oval (Outline)").setIcon(R.drawable.ic_tool_shapes)
-            popup.menu.add(0, 4, 0, "Oval (Filled)").setIcon(R.drawable.ic_tool_shapes)
-            popup.menu.add(0, 5, 0, "Arrow").setIcon(R.drawable.ic_tool_select)
-            popup.menu.add(0, 6, 0, "Line").setIcon(R.drawable.ic_tool_pen)
-
-            try {
-                val mPopup = PopupMenu::class.java.getDeclaredField("mPopup").apply { isAccessible = true }.get(popup)
-                mPopup.javaClass.getDeclaredMethod("setForceShowIcon", Boolean::class.javaPrimitiveType).invoke(mPopup, true)
-            } catch (e: Exception) {}
-
-            popup.setOnMenuItemClickListener { item ->
-                when(item.itemId) {
-                    1 -> setShape(DrawingView.ShapeType.RECTANGLE, false)
-                    2 -> setShape(DrawingView.ShapeType.RECTANGLE, true)
-                    3 -> setShape(DrawingView.ShapeType.OVAL, false)
-                    4 -> setShape(DrawingView.ShapeType.OVAL, true)
-                    5 -> setShape(DrawingView.ShapeType.ARROW, false)
-                    6 -> setShape(DrawingView.ShapeType.LINE, false)
-                }
-                updateToolUI(btnShapes)
-                true
-            }
-            popup.show()
+    private fun setupToolbar() {
+        toolbar.setNavigationOnClickListener {
+            imagePickerLauncher.launch("image/*")
         }
 
-        findViewById<FloatingActionButton>(R.id.fabAdd).visibility = View.GONE
+        toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_undo -> {
+                    drawingView.undo()
+                    true
+                }
+                R.id.action_redo -> {
+                    // Only handle redo if it exists in menu
+                    drawingView.redo()
+                    true
+                }
+                R.id.action_save -> {
+                    saveImage()
+                    true
+                }
+                R.id.action_settings -> {
+                    openSettings()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun setupDrawingView() {
+        drawingView.onStateChanged = { state ->
+            // Update UI based on drawing state
+            updateUndoRedoButtons(state.canUndo, state.canRedo)
+        }
+    }
+
+    private fun setupTools() {
+        btnSelect.setOnClickListener {
+            drawingView.setTool(ToolType.SELECT)
+            updateToolUI(btnSelect)
+        }
+
+        btnPen.setOnClickListener {
+            drawingView.setTool(ToolType.PEN)
+            updateToolUI(btnPen)
+        }
+
+        btnMarker.setOnClickListener {
+            drawingView.setTool(ToolType.MARKER)
+            updateToolUI(btnMarker)
+        }
+
+        btnEraser.setOnClickListener {
+            drawingView.setTool(ToolType.ERASER)
+            updateToolUI(btnEraser)
+        }
+
+        btnText.setOnClickListener {
+            showAddTextDialog()
+            updateToolUI(btnText)
+        }
+
+        btnSignature.setOnClickListener {
+            showSignatureDialog()
+        }
+
+        btnShapes.setOnClickListener { view ->
+            showShapesMenu(view)
+        }
+
+        // Start with pen tool selected
         updateToolUI(btnPen)
     }
 
-    private fun refreshPaletteBar() {
-        val count = colorContainer.childCount
-        if (count > 1) colorContainer.removeViews(0, count - 1)
+    private fun setupColorPalette() {
+        btnCustomColor.setOnClickListener {
+            showColorPickerDialog()
+        }
+    }
 
-        val colors = PaletteManager.getColors(this)
+    private fun setupStrokeSlider() {
+        strokeSlider.addOnChangeListener { _, value, _ ->
+            drawingView.setStrokeWidth(value)
+        }
+    }
+
+    private fun applySettings() {
+        // Background
+        val background = settingsRepo.getCanvasBackground()
+        drawingView.setCanvasColor(background.colorValue)
+
+        // Screen on
+        if (settingsRepo.shouldKeepScreenOn()) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+
+        // Grid
+        drawingView.setShowGrid(settingsRepo.shouldShowGrid())
+
+        // Accent color
+        if (!settingsRepo.isUsingMaterialYou()) {
+            val accentColor = settingsRepo.getAccentColor()
+            toolbar.setBackgroundColor(accentColor)
+            toolbar.setTitleTextColor(Color.WHITE)
+            toolbar.navigationIcon?.setTint(Color.WHITE)
+        }
+    }
+
+    private fun refreshPaletteBar() {
+        // Remove all color buttons except the custom button
+        val childCount = colorContainer.childCount
+        if (childCount > 1) {
+            colorContainer.removeViews(0, childCount - 1)
+        }
+
+        val colors = paletteRepo.getColors()
         for (color in colors) {
-            val btn = MaterialButton(this).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = dp(8) }
-                backgroundTintList = ColorStateList.valueOf(color)
-                stateListAnimator = null; cornerRadius = dp(24); insetTop=0; insetBottom=0
-                strokeWidth = dp(1); strokeColor = ColorStateList.valueOf(Color.LTGRAY)
-                setOnClickListener { drawingView.setColor(color) }
+            val button = createColorButton(color)
+            // Add before the custom color button
+            colorContainer.addView(button, colorContainer.childCount - 1)
+        }
+    }
+
+    private fun createColorButton(color: Int): MaterialButton {
+        return MaterialButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                dp(UIConstants.COLOR_BUTTON_SIZE),
+                dp(UIConstants.COLOR_BUTTON_SIZE)
+            ).apply {
+                marginEnd = dp(UIConstants.COLOR_BUTTON_MARGIN)
             }
-            colorContainer.addView(btn, colorContainer.childCount - 1)
+
+            backgroundTintList = ColorStateList.valueOf(color)
+            stateListAnimator = null
+            cornerRadius = dp(UIConstants.COLOR_BUTTON_CORNER_RADIUS)
+            insetTop = 0
+            insetBottom = 0
+            strokeWidth = dp(UIConstants.COLOR_BUTTON_STROKE_WIDTH)
+            strokeColor = ColorStateList.valueOf(Color.LTGRAY)
+
+            setOnClickListener {
+                drawingView.setColor(color)
+            }
+
+            setOnLongClickListener {
+                showRemoveColorDialog(color)
+                true
+            }
         }
     }
 
     private fun updateToolUI(activeButton: MaterialButton) {
-        val allButtons = listOf(btnSelect, btnPen, btnMarker, btnEraser, btnText, btnSignature, btnShapes)
+        val allButtons = listOf(
+            btnSelect, btnPen, btnMarker,
+            btnEraser, btnText, btnSignature, btnShapes
+        )
+
         val unselectedBg = ContextCompat.getColor(this, R.color.md_theme_surface_variant)
         val unselectedIcon = ContextCompat.getColor(this, R.color.tool_unselected_icon)
-        for (btn in allButtons) { btn.backgroundTintList = ColorStateList.valueOf(unselectedBg); btn.iconTint = ColorStateList.valueOf(unselectedIcon) }
         val selectedBg = ContextCompat.getColor(this, R.color.tool_selected_bg)
         val selectedIcon = ContextCompat.getColor(this, R.color.tool_selected_icon)
+
+        for (button in allButtons) {
+            button.backgroundTintList = ColorStateList.valueOf(unselectedBg)
+            button.iconTint = ColorStateList.valueOf(unselectedIcon)
+        }
+
         activeButton.backgroundTintList = ColorStateList.valueOf(selectedBg)
         activeButton.iconTint = ColorStateList.valueOf(selectedIcon)
     }
 
-    private fun setShape(type: DrawingView.ShapeType, filled: Boolean) {
-        drawingView.setTool(DrawingView.ToolType.SHAPE)
+    private fun updateUndoRedoButtons(canUndo: Boolean, canRedo: Boolean) {
+        // Safely update undo button
+        toolbar.menu.findItem(R.id.action_undo)?.isEnabled = canUndo
+
+        // Safely update redo button (only if it exists)
+        toolbar.menu.findItem(R.id.action_redo)?.let { redoItem ->
+            redoItem.isEnabled = canRedo
+        }
+    }
+
+    private fun showShapesMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+
+        popup.menu.apply {
+            add(0, 1, 0, "Rectangle (Outline)")
+            add(0, 2, 0, "Rectangle (Filled)")
+            add(0, 3, 0, "Oval (Outline)")
+            add(0, 4, 0, "Oval (Filled)")
+            add(0, 5, 0, "Arrow")
+            add(0, 6, 0, "Line")
+        }
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> setShape(ShapeType.RECTANGLE, false)
+                2 -> setShape(ShapeType.RECTANGLE, true)
+                3 -> setShape(ShapeType.OVAL, false)
+                4 -> setShape(ShapeType.OVAL, true)
+                5 -> setShape(ShapeType.ARROW, false)
+                6 -> setShape(ShapeType.LINE, false)
+            }
+            updateToolUI(btnShapes)
+            true
+        }
+
+        popup.show()
+    }
+
+    private fun setShape(type: ShapeType, filled: Boolean) {
+        drawingView.setTool(ToolType.SHAPE)
         drawingView.currentShapeType = type
         drawingView.isShapeFilled = filled
     }
 
-    private fun addTextFlow() {
-        val input = EditText(this)
-        AlertDialog.Builder(this).setTitle("Add Text").setView(input)
-            .setPositiveButton("Add") { _, _ -> if (input.text.isNotEmpty()) { drawingView.addText(input.text.toString()); drawingView.setTool(DrawingView.ToolType.SELECT); updateToolUI(btnSelect) } }
-            .setNegativeButton("Cancel", null).show()
+    private fun showAddTextDialog() {
+        val input = EditText(this).apply {
+            hint = "Enter text"
+            maxLines = 3
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Add Text")
+            .setView(input)
+            .setPositiveButton("Add") { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    if (text.length > 100) {
+                        showToast("Text too long (max 100 characters)")
+                    } else {
+                        drawingView.addText(text)
+                        drawingView.setTool(ToolType.SELECT)
+                        updateToolUI(btnSelect)
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun showColorPicker() {
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(50, 40, 50, 10) }
-        val preview = View(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 150); setBackgroundColor(Color.BLACK) }
+    private fun showSignatureDialog() {
+        SignatureDialog(this) { bitmap ->
+            drawingView.addSignature(bitmap)
+            drawingView.setTool(ToolType.SELECT)
+            updateToolUI(btnSelect)
+        }.show()
+    }
+
+    private fun showColorPickerDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                dp(UIConstants.COLOR_PICKER_PADDING),
+                dp(40),
+                dp(UIConstants.COLOR_PICKER_PADDING),
+                dp(10)
+            )
+        }
+
+        // Color preview
+        val preview = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                UIConstants.COLOR_PREVIEW_HEIGHT
+            )
+            setBackgroundColor(Color.BLACK)
+        }
         layout.addView(preview)
-        val picker = ColorPickerView(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 600) }
+
+        // Color picker
+        val picker = ColorPickerView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                UIConstants.COLOR_PICKER_HEIGHT
+            )
+        }
         layout.addView(picker)
+
+        // Hex input
         val hexInput = EditText(this).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = 20 }
-            hint = "#RRGGBB"; textSize = 16f; setSingleLine(); textAlignment = View.TEXT_ALIGNMENT_CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 20
+            }
+            hint = "#RRGGBB"
+            textSize = 16f
+            setSingleLine()
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
         }
         layout.addView(hexInput)
 
+        // Setup color picker callbacks
         picker.onColorChanged = { color ->
             preview.setBackgroundColor(color)
             val hex = String.format("#%06X", (0xFFFFFF and color))
-            if (hexInput.text.toString() != hex) { hexInput.setTag("ignore"); hexInput.setText(hex); hexInput.setTag(null) }
+            if (hexInput.text.toString() != hex && hexInput.tag == null) {
+                hexInput.setText(hex)
+            }
         }
-        picker.setColor(Color.BLACK); hexInput.setText("#000000")
 
-        AlertDialog.Builder(this).setTitle("Custom Color").setView(layout)
+        picker.setColor(Color.BLACK)
+        hexInput.setText("#000000")
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Custom Color")
+            .setView(layout)
             .setPositiveButton("Add") { _, _ ->
                 try {
-                    val color = Color.parseColor(hexInput.text.toString())
-                    val list = PaletteManager.getColors(this)
-                    list.add(color)
-                    PaletteManager.saveColors(this, list)
+                    val colorStr = hexInput.text.toString()
+                    val color = Color.parseColor(colorStr)
+                    paletteRepo.addColor(color)
                     refreshPaletteBar()
                     drawingView.setColor(color)
-                } catch (e: Exception) {}
+                    showToast("Color added to palette")
+                } catch (e: IllegalArgumentException) {
+                    showToast("Invalid color format")
+                    Log.e(LogTags.MAIN_ACTIVITY, "Invalid color format", e)
+                }
             }
-            .setNegativeButton("Cancel", null).show()
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun saveImageToGallery(bitmap: Bitmap) {
-        val prefs = getSharedPreferences("MarkupSettings", Context.MODE_PRIVATE)
-        val saveLoc = prefs.getString("SAVE_LOCATION", "PICTURES")
-        val format = prefs.getString("EXPORT_FORMAT", "PNG")
-        val compressFormat = if (format == "JPEG") Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG
-        val ext = if (format == "JPEG") "jpg" else "png"
-        val mime = if (format == "JPEG") "image/jpeg" else "image/png"
+    private fun showRemoveColorDialog(color: Int) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Remove Color")
+            .setMessage("Remove this color from the palette?")
+            .setPositiveButton("Remove") { _, _ ->
+                paletteRepo.removeColor(color)
+                refreshPaletteBar()
+                showToast("Color removed")
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 
-        val dir = if (saveLoc == "DOWNLOADS") Environment.DIRECTORY_DOWNLOADS else Environment.DIRECTORY_PICTURES
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "Markup_${System.currentTimeMillis()}.$ext")
-            put(MediaStore.MediaColumns.MIME_TYPE, mime)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) put(MediaStore.MediaColumns.RELATIVE_PATH, dir)
+    private fun loadImage(uri: android.net.Uri) {
+        lifecycleScope.launch {
+            when (val result = fileOps.loadImage(uri)) {
+                is LoadResult.Success -> {
+                    drawingView.setImage(result.bitmap)
+                    showToast("Image loaded")
+                }
+                is LoadResult.Error -> {
+                    val message = fileOps.getLoadErrorMessage(result)
+                    showToast(message)
+                }
+            }
+        }
+    }
+
+    private fun saveImage() {
+        lifecycleScope.launch {
+            val bitmap = drawingView.getBitmap()
+            val format = settingsRepo.getExportFormat()
+            val location = settingsRepo.getSaveLocation()
+
+            showToast("Saving...")
+
+            when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
+                is SaveResult.Success -> {
+                    showToast("Saved: ${result.filePath}")
+                }
+                is SaveResult.Error -> {
+                    val message = fileOps.getSaveErrorMessage(result)
+                    showToast(message)
+
+                    // If permission error, offer to request permissions
+                    if (result is SaveResult.Error.NoPermission) {
+                        showPermissionRationaleDialog()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun openSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        settingsLauncher.launch(intent)
+    }
+
+    private fun checkAndRequestPermissions() {
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
         }
 
-        try {
-            val uri = if (saveLoc == "DOWNLOADS" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Downloads.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            contentResolver.insert(uri, values)?.let { u ->
-                contentResolver.openOutputStream(u)?.use { out -> bitmap.compress(compressFormat, 100, out); Toast.makeText(this, "Saved!", Toast.LENGTH_SHORT).show() }
-            }
-        } catch (e: Exception) { Toast.makeText(this, "Save Failed", Toast.LENGTH_SHORT).show() }
+        val needsPermission = permissions.any {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (needsPermission) {
+            // Don't request on first launch, wait until user tries to save
+            Log.d(LogTags.MAIN_ACTIVITY, "Permissions not granted yet")
+        }
     }
 
-    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+    private fun showPermissionRationaleDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Storage Permission Required")
+            .setMessage("Storage permission is required to save your drawings. Would you like to grant permission?")
+            .setPositiveButton("Grant") { _, _ ->
+                requestPermissions()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun requestPermissions() {
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        }
+
+        permissionLauncher.launch(permissions)
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
 }

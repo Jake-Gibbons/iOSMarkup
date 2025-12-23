@@ -4,32 +4,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/md_theme_surface"
+    android:background="?attr/colorSurface"
     android:fitsSystemWindows="true">
 
+    <!-- App Bar with proper theming -->
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:fitsSystemWindows="true"
+        android:background="?attr/colorPrimary"
+        app:elevation="4dp">
+        
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/topAppBar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Markup"
             app:titleCentered="true"
+            app:titleTextColor="?attr/colorOnPrimary"
             app:menu="@menu/top_app_bar_menu"
-            app:navigationIcon="@android:drawable/ic_menu_gallery" />
+            app:navigationIcon="@android:drawable/ic_menu_gallery"
+            app:navigationIconTint="?attr/colorOnPrimary"
+            android:background="?attr/colorPrimary" />
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Drawing View -->
     <com.example.iosmarkup.DrawingView
         android:id="@+id/drawingView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="?attr/actionBarSize"
-        android:layout_marginBottom="0dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:background="#FFFFFF"/>
 
+    <!-- Bottom Tools Card -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -37,7 +45,7 @@
         android:layout_margin="16dp"
         app:cardCornerRadius="24dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/md_theme_surface_variant">
+        app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -45,13 +53,19 @@
             android:orientation="vertical"
             android:paddingVertical="20dp">
 
+            <!-- Stroke Width Slider -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:paddingHorizontal="20dp"
                 android:orientation="horizontal">
-                <View android:layout_width="4dp" android:layout_height="4dp" android:background="@color/tool_unselected_icon" android:backgroundTint="@color/tool_unselected_icon" />
+                
+                <View 
+                    android:layout_width="4dp" 
+                    android:layout_height="4dp" 
+                    android:background="?attr/colorOnSurfaceVariant" />
+                
                 <com.google.android.material.slider.Slider
                     android:id="@+id/strokeSlider"
                     android:layout_width="0dp"
@@ -61,15 +75,21 @@
                     android:valueFrom="5.0"
                     android:valueTo="60.0"
                     android:value="10.0"/>
-                <View android:layout_width="12dp" android:layout_height="12dp" android:background="@color/tool_unselected_icon" android:backgroundTint="@color/tool_unselected_icon" />
+                
+                <View 
+                    android:layout_width="12dp" 
+                    android:layout_height="12dp" 
+                    android:background="?attr/colorOnSurfaceVariant" />
             </LinearLayout>
 
+            <!-- Color Palette -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:scrollbars="none"
                 android:overScrollMode="never">
+                
                 <LinearLayout
                     android:id="@+id/colorContainer"
                     android:layout_width="wrap_content"
@@ -77,44 +97,108 @@
                     android:gravity="center_vertical"
                     android:paddingHorizontal="20dp"
                     android:orientation="horizontal">
+                    
+                    <!-- Add Color Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnColorCustom"
                         style="@style/Widget.Material3.Button.IconButton"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:backgroundTint="#F0F0F0"
+                        android:backgroundTint="?attr/colorSurfaceVariant"
                         app:icon="@android:drawable/ic_input_add"
-                        app:iconTint="#000000" />
+                        app:iconTint="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
             </HorizontalScrollView>
 
+            <!-- Tool Buttons -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:scrollbars="none"
                 android:overScrollMode="never">
+                
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:paddingHorizontal="12dp">
 
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSelect" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_select" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnPen" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_pen" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/tool_selected_bg" app:iconTint="@color/tool_selected_icon" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMarker" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_marker" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnEraser" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_eraser" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnSelect" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_select" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnPen" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_pen" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnMarker" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_marker" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnEraser" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_eraser" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
 
-                    <View android:layout_width="1dp" android:layout_height="32dp" android:layout_gravity="center_vertical" android:background="@color/md_theme_outline" android:layout_marginHorizontal="8dp" />
+                    <!-- Divider -->
+                    <View 
+                        android:layout_width="1dp" 
+                        android:layout_height="32dp" 
+                        android:layout_gravity="center_vertical" 
+                        android:background="?attr/colorOutline" 
+                        android:layout_marginHorizontal="8dp" />
 
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnText" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_text" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnSignature" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_signature" app:iconSize="24dp" android:layout_marginEnd="4dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnShapes" style="@style/Widget.Material3.Button.IconButton.Filled" android:layout_width="56dp" android:layout_height="56dp" app:icon="@drawable/ic_tool_shapes" app:iconSize="24dp" android:backgroundTint="@color/md_theme_surface_variant" app:iconTint="@color/tool_unselected_icon" />
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnText" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_text" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnSignature" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_signature" 
+                        app:iconSize="24dp" 
+                        android:layout_marginEnd="4dp" />
+                    
+                    <com.google.android.material.button.MaterialButton 
+                        android:id="@+id/btnShapes" 
+                        style="@style/Widget.Material3.Button.IconButton.Filled" 
+                        android:layout_width="56dp" 
+                        android:layout_height="56dp" 
+                        app:icon="@drawable/ic_tool_shapes" 
+                        app:iconSize="24dp" />
                 </LinearLayout>
             </HorizontalScrollView>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- Hidden FAB (legacy) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAdd"
         android:layout_width="wrap_content"

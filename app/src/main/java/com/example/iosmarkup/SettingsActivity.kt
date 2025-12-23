@@ -16,113 +16,364 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
-import androidx.core.graphics.toColorInt
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.color.DynamicColors
 import com.google.android.material.materialswitch.MaterialSwitch
 
+/**
+ * Improved SettingsActivity with proper theming and contrast
+ */
 class SettingsActivity : AppCompatActivity() {
-
+    
+    private lateinit var settingsRepo: SettingsRepository
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var btnRequestPermission: MaterialButton
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { checkPermissions() }
-
+    
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { 
+        checkPermissions() 
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply theme before super.onCreate
+        settingsRepo = SettingsRepository(this)
+        applyTheme()
+        
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-        val prefs = getSharedPreferences("MarkupSettings", MODE_PRIVATE)
-
-        findViewById<MaterialToolbar>(R.id.settingsToolbar).setNavigationOnClickListener { finish() }
-
-        // Themes
-        val radioGroupTheme = findViewById<RadioGroup>(R.id.radioGroupTheme)
-        when (prefs.getInt("APP_THEME", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)) {
-            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM -> findViewById<RadioButton>(R.id.radioThemeSystem).isChecked = true
-            AppCompatDelegate.MODE_NIGHT_NO -> findViewById<RadioButton>(R.id.radioThemeLight).isChecked = true
-            AppCompatDelegate.MODE_NIGHT_YES -> findViewById<RadioButton>(R.id.radioThemeDark).isChecked = true
+        
+        toolbar = findViewById(R.id.settingsToolbar)
+        setupToolbar()
+        setupThemeSettings()
+        setupMaterialYouSettings()
+        setupCanvasSettings()
+        setupGridSettings()
+        setupScreenSettings()
+        setupStorageSettings()
+        setupExportSettings()
+        setupPermissions()
+        setupPaletteButton()
+        setupClearButton()
+        setupAboutInfo()
+        
+        // Apply toolbar theming
+        applyToolbarTheming()
+    }
+    
+    private fun applyTheme() {
+        val theme = settingsRepo.getTheme()
+        AppCompatDelegate.setDefaultNightMode(theme)
+        
+        if (settingsRepo.isUsingMaterialYou() && 
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            DynamicColors.applyToActivityIfAvailable(this)
         }
+    }
+    
+    private fun setupToolbar() {
+        toolbar.setNavigationOnClickListener { 
+            finish() 
+        }
+    }
+    
+    private fun applyToolbarTheming() {
+        if (settingsRepo.isUsingMaterialYou()) {
+            // Use Material You colors
+            val primaryColor = ContextCompat.getColor(this, R.color.md_theme_primary)
+            val onPrimaryColor = ContextCompat.getColor(this, R.color.md_theme_onPrimary)
+            
+            toolbar.setBackgroundColor(primaryColor)
+            toolbar.setTitleTextColor(onPrimaryColor)
+            toolbar.navigationIcon?.setTint(onPrimaryColor)
+            
+            // Update status bar color to match
+            window.statusBarColor = primaryColor
+        } else {
+            // Use custom accent color
+            val accentColor = settingsRepo.getAccentColor()
+            val textColor = getContrastingTextColor(accentColor)
+            
+            toolbar.setBackgroundColor(accentColor)
+            toolbar.setTitleTextColor(textColor)
+            toolbar.navigationIcon?.setTint(textColor)
+            
+            // Update status bar color to match
+            window.statusBarColor = accentColor
+        }
+    }
+    
+    private fun getContrastingTextColor(backgroundColor: Int): Int {
+        // Calculate luminance
+        val red = Color.red(backgroundColor)
+        val green = Color.green(backgroundColor)
+        val blue = Color.blue(backgroundColor)
+        
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+        
+        return if (luminance > 0.5) Color.BLACK else Color.WHITE
+    }
+    
+    private fun setupThemeSettings() {
+        val radioGroupTheme = findViewById<RadioGroup>(R.id.radioGroupTheme)
+        
+        when (settingsRepo.getTheme()) {
+            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM -> 
+                findViewById<RadioButton>(R.id.radioThemeSystem).isChecked = true
+            AppCompatDelegate.MODE_NIGHT_NO -> 
+                findViewById<RadioButton>(R.id.radioThemeLight).isChecked = true
+            AppCompatDelegate.MODE_NIGHT_YES -> 
+                findViewById<RadioButton>(R.id.radioThemeDark).isChecked = true
+        }
+        
         radioGroupTheme.setOnCheckedChangeListener { _, id ->
-            val mode = when(id) { R.id.radioThemeLight -> AppCompatDelegate.MODE_NIGHT_NO; R.id.radioThemeDark -> AppCompatDelegate.MODE_NIGHT_YES; else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM }
-            prefs.edit { putInt("APP_THEME", mode) }
+            val mode = when (id) {
+                R.id.radioThemeLight -> AppCompatDelegate.MODE_NIGHT_NO
+                R.id.radioThemeDark -> AppCompatDelegate.MODE_NIGHT_YES
+                else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            }
+            settingsRepo.setTheme(mode)
             AppCompatDelegate.setDefaultNightMode(mode)
         }
-
-        // Material You / Accent
+    }
+    
+    private fun setupMaterialYouSettings() {
         val switchMatYou = findViewById<MaterialSwitch>(R.id.switchMaterialYou)
         val accentContainer = findViewById<LinearLayout>(R.id.accentColorContainer)
-        if (Build.VERSION.SDK_INT < 31) { switchMatYou.isEnabled = false; switchMatYou.text = "Material You (Android 12+ Only)" }
-        switchMatYou.isChecked = prefs.getBoolean("USE_MATERIAL_YOU", false)
-        switchMatYou.setOnCheckedChangeListener { _, c -> prefs.edit { putBoolean("USE_MATERIAL_YOU", c) }; Toast.makeText(this, "Restart to apply", Toast.LENGTH_SHORT).show() }
-
-        val colors = listOf("#4F378B", "#B3261E", "#2196F3", "#00796B", "#FF9800", "#1C1B1F")
-        for (hex in colors) {
-            val c = hex.toColorInt()
-            val btn = MaterialButton(this).apply {
-                layoutParams = LinearLayout.LayoutParams(100, 100).apply { marginEnd = 16 }
-                backgroundTintList = ColorStateList.valueOf(c); cornerRadius = 50
-                setOnClickListener { if (!switchMatYou.isChecked) { prefs.edit { putInt("ACCENT_COLOR", c) } } }
+        
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            switchMatYou.isEnabled = false
+            switchMatYou.text = "Material You (Android 12+ Only)"
+        }
+        
+        switchMatYou.isChecked = settingsRepo.isUsingMaterialYou()
+        
+        switchMatYou.setOnCheckedChangeListener { _, isChecked ->
+            settingsRepo.setUseMaterialYou(isChecked)
+            
+            // Update accent color visibility
+            accentContainer.alpha = if (isChecked) 0.5f else 1.0f
+            
+            // Show restart message
+            Toast.makeText(
+                this, 
+                "Restart app to apply Material You", 
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        
+        // Setup accent color buttons
+        val currentAccent = settingsRepo.getAccentColor()
+        
+        for (hex in DefaultColors.ACCENT_COLORS) {
+            val color = Color.parseColor(hex)
+            val button = createAccentColorButton(color, color == currentAccent)
+            accentContainer.addView(button)
+        }
+        
+        // Disable accent colors if Material You is enabled
+        accentContainer.alpha = if (switchMatYou.isChecked) 0.5f else 1.0f
+    }
+    
+    private fun createAccentColorButton(color: Int, isSelected: Boolean): MaterialButton {
+        return MaterialButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                dp(UIConstants.ACCENT_BUTTON_SIZE),
+                dp(UIConstants.ACCENT_BUTTON_SIZE)
+            ).apply {
+                marginEnd = dp(UIConstants.ACCENT_BUTTON_MARGIN)
             }
-            accentContainer.addView(btn)
+            
+            backgroundTintList = ColorStateList.valueOf(color)
+            cornerRadius = dp(UIConstants.ACCENT_BUTTON_CORNER_RADIUS)
+            
+            // Show selection indicator
+            if (isSelected) {
+                strokeWidth = dp(4)
+                strokeColor = ColorStateList.valueOf(Color.WHITE)
+            }
+            
+            setOnClickListener {
+                if (!settingsRepo.isUsingMaterialYou()) {
+                    settingsRepo.setAccentColor(color)
+                    Toast.makeText(
+                        this@SettingsActivity,
+                        "Accent color updated",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    
+                    // Refresh accent buttons
+                    refreshAccentButtons()
+                    
+                    // Update toolbar immediately
+                    applyToolbarTheming()
+                }
+            }
         }
-
-        // Canvas BG
-        val rgBg = findViewById<RadioGroup>(R.id.radioGroupBackground)
-        when(prefs.getInt("CANVAS_BG", 0)) {
-            0 -> findViewById<RadioButton>(R.id.radioBgWhite).isChecked = true
-            1 -> findViewById<RadioButton>(R.id.radioBgPaper).isChecked = true
-            2 -> findViewById<RadioButton>(R.id.radioBgDark).isChecked = true
+    }
+    
+    private fun refreshAccentButtons() {
+        val accentContainer = findViewById<LinearLayout>(R.id.accentColorContainer)
+        accentContainer.removeAllViews()
+        
+        val currentAccent = settingsRepo.getAccentColor()
+        
+        for (hex in DefaultColors.ACCENT_COLORS) {
+            val color = Color.parseColor(hex)
+            val button = createAccentColorButton(color, color == currentAccent)
+            accentContainer.addView(button)
         }
-        rgBg.setOnCheckedChangeListener { _, id ->
-            val v = when(id) { R.id.radioBgWhite -> 0; R.id.radioBgPaper -> 1; else -> 2 }
-            prefs.edit { putInt("CANVAS_BG", v) }
+    }
+    
+    private fun setupCanvasSettings() {
+        val radioGroupBg = findViewById<RadioGroup>(R.id.radioGroupBackground)
+        
+        when (settingsRepo.getCanvasBackground()) {
+            CanvasBackground.WHITE -> 
+                findViewById<RadioButton>(R.id.radioBgWhite).isChecked = true
+            CanvasBackground.PAPER -> 
+                findViewById<RadioButton>(R.id.radioBgPaper).isChecked = true
+            CanvasBackground.DARK -> 
+                findViewById<RadioButton>(R.id.radioBgDark).isChecked = true
         }
-
-        // Grid
-        val swGrid = findViewById<MaterialSwitch>(R.id.switchGridLines)
-        swGrid.isChecked = prefs.getBoolean("SHOW_GRID", false)
-        swGrid.setOnCheckedChangeListener { _, c -> prefs.edit { putBoolean("SHOW_GRID", c) } }
-
-        // Screen On
-        val swScreen = findViewById<MaterialSwitch>(R.id.switchKeepScreenOn)
-        swScreen.isChecked = prefs.getBoolean("KEEP_SCREEN_ON", false)
-        swScreen.setOnCheckedChangeListener { _, c -> prefs.edit { putBoolean("KEEP_SCREEN_ON", c) } }
-
-        // Storage
-        val rgStore = findViewById<RadioGroup>(R.id.radioGroupStorage)
-        if (prefs.getString("SAVE_LOCATION", "PICTURES") == "DOWNLOADS") findViewById<RadioButton>(R.id.radioSaveDownloads).isChecked = true else findViewById<RadioButton>(R.id.radioSavePictures).isChecked = true
-        rgStore.setOnCheckedChangeListener { _, id -> prefs.edit { putString("SAVE_LOCATION", if (id == R.id.radioSaveDownloads) "DOWNLOADS" else "PICTURES") } }
-
-        // Format
-        val rgFmt = findViewById<RadioGroup>(R.id.radioGroupFormat)
-        if (prefs.getString("EXPORT_FORMAT", "PNG") == "JPEG") findViewById<RadioButton>(R.id.radioJpeg).isChecked = true else findViewById<RadioButton>(R.id.radioPng).isChecked = true
-        rgFmt.setOnCheckedChangeListener { _, id -> prefs.edit { putString("EXPORT_FORMAT", if (id == R.id.radioJpeg) "JPEG" else "PNG") } }
-
-        // Permissions
+        
+        radioGroupBg.setOnCheckedChangeListener { _, id ->
+            val background = when (id) {
+                R.id.radioBgWhite -> CanvasBackground.WHITE
+                R.id.radioBgPaper -> CanvasBackground.PAPER
+                else -> CanvasBackground.DARK
+            }
+            settingsRepo.setCanvasBackground(background)
+        }
+    }
+    
+    private fun setupGridSettings() {
+        val switchGrid = findViewById<MaterialSwitch>(R.id.switchGridLines)
+        switchGrid.isChecked = settingsRepo.shouldShowGrid()
+        switchGrid.setOnCheckedChangeListener { _, isChecked ->
+            settingsRepo.setShowGrid(isChecked)
+        }
+    }
+    
+    private fun setupScreenSettings() {
+        val switchScreen = findViewById<MaterialSwitch>(R.id.switchKeepScreenOn)
+        switchScreen.isChecked = settingsRepo.shouldKeepScreenOn()
+        switchScreen.setOnCheckedChangeListener { _, isChecked ->
+            settingsRepo.setKeepScreenOn(isChecked)
+        }
+    }
+    
+    private fun setupStorageSettings() {
+        val radioGroupStorage = findViewById<RadioGroup>(R.id.radioGroupStorage)
+        
+        when (settingsRepo.getSaveLocation()) {
+            SaveLocation.PICTURES -> 
+                findViewById<RadioButton>(R.id.radioSavePictures).isChecked = true
+            SaveLocation.DOWNLOADS -> 
+                findViewById<RadioButton>(R.id.radioSaveDownloads).isChecked = true
+        }
+        
+        radioGroupStorage.setOnCheckedChangeListener { _, id ->
+            val location = when (id) {
+                R.id.radioSaveDownloads -> SaveLocation.DOWNLOADS
+                else -> SaveLocation.PICTURES
+            }
+            settingsRepo.setSaveLocation(location)
+        }
+    }
+    
+    private fun setupExportSettings() {
+        val radioGroupFormat = findViewById<RadioGroup>(R.id.radioGroupFormat)
+        
+        when (settingsRepo.getExportFormat()) {
+            ExportFormat.PNG -> 
+                findViewById<RadioButton>(R.id.radioPng).isChecked = true
+            ExportFormat.JPEG -> 
+                findViewById<RadioButton>(R.id.radioJpeg).isChecked = true
+        }
+        
+        radioGroupFormat.setOnCheckedChangeListener { _, id ->
+            val format = when (id) {
+                R.id.radioJpeg -> ExportFormat.JPEG
+                else -> ExportFormat.PNG
+            }
+            settingsRepo.setExportFormat(format)
+        }
+    }
+    
+    private fun setupPermissions() {
         btnRequestPermission = findViewById(R.id.btnRequestPermission)
         btnRequestPermission.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= 33) requestPermissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
-            else requestPermissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            requestStoragePermissions()
         }
         checkPermissions()
-
-        // Palette
-        findViewById<MaterialButton>(R.id.btnCustomizePalette).setOnClickListener { startActivity(Intent(this, PaletteActivity::class.java)) }
-
-        // Clear
-        findViewById<MaterialButton>(R.id.btnClearCanvas).setOnClickListener { setResult(RESULT_OK, Intent().apply { putExtra("ACTION", "CLEAR_CANVAS") }); finish() }
-
-        // About
-        try {
-            val pInfo = packageManager.getPackageInfo(packageName, 0)
-            findViewById<TextView>(R.id.tvVersionInfo).text = "Version ${pInfo.versionName}"
-            findViewById<TextView>(R.id.tvBuildNumber).text = "Build ${if (Build.VERSION.SDK_INT >= 28) pInfo.longVersionCode else pInfo.versionCode}"
-        } catch (e: Exception) {}
     }
-
-    private fun checkPermissions() {
-        val perm = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.WRITE_EXTERNAL_STORAGE
-        if (ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED) {
-            btnRequestPermission.isEnabled = false; btnRequestPermission.text = "Granted"
+    
+    private fun requestStoragePermissions() {
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
         }
+        requestPermissionLauncher.launch(permissions)
+    }
+    
+    private fun checkPermissions() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        }
+        
+        val isGranted = ContextCompat.checkSelfPermission(
+            this, 
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        btnRequestPermission.isEnabled = !isGranted
+        btnRequestPermission.text = if (isGranted) "Granted" else "Grant Permission"
+    }
+    
+    private fun setupPaletteButton() {
+        findViewById<MaterialButton>(R.id.btnCustomizePalette).setOnClickListener {
+            startActivity(Intent(this, PaletteActivity::class.java))
+        }
+    }
+    
+    private fun setupClearButton() {
+        findViewById<MaterialButton>(R.id.btnClearCanvas).setOnClickListener {
+            setResult(RESULT_OK, Intent().apply {
+                putExtra("ACTION", "CLEAR_CANVAS")
+            })
+            finish()
+        }
+    }
+    
+    private fun setupAboutInfo() {
+        try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            
+            findViewById<TextView>(R.id.tvVersionInfo).text = 
+                "Version ${packageInfo.versionName}"
+            
+            val buildNumber = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode.toLong()
+            }
+            
+            findViewById<TextView>(R.id.tvBuildNumber).text = "Build $buildNumber"
+        } catch (e: Exception) {
+            // Ignore if we can't get package info
+        }
+    }
+    
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 }
