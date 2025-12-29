@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme additions for API 27+ (Android 8.1 Oreo) -->
+    <style name="Theme.IosMarkup" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Navigation bar light mode (API 27+) -->
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

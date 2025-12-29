@@ -25,6 +25,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            
+            <!-- Also accept shared images for full editing -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
         </activity>
 
         <activity
@@ -38,6 +45,31 @@
             android:label="Edit Palette"
             android:theme="@style/Theme.IosMarkup"
             android:parentActivityName=".SettingsActivity"/>
+
+        <!-- ShareActivity for quick image markup from share sheet -->
+        <activity
+            android:name=".ShareActivity"
+            android:label="Quick Markup"
+            android:theme="@style/Theme.IosMarkup"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+            
+            <!-- Accept images shared from other apps -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            
+            <!-- Accept images opened with this app -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="image/*" />
+                <data android:scheme="content" />
+            </intent-filter>
+        </activity>
 
     </application>
 </manifest>

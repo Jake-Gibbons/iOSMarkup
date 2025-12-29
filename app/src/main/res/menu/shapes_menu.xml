@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/shape_rectangle"
+        android:title="Rectangle" />
+    
+    <item
+        android:id="@+id/shape_rectangle_filled"
+        android:title="Rectangle (Filled)" />
+    
+    <item
+        android:id="@+id/shape_oval"
+        android:title="Oval" />
+    
+    <item
+        android:id="@+id/shape_oval_filled"
+        android:title="Oval (Filled)" />
+    
+    <item
+        android:id="@+id/shape_arrow"
+        android:title="Arrow" />
+    
+    <item
+        android:id="@+id/shape_line"
+        android:title="Line" />
+
+</menu>

@@ -8,6 +8,5 @@
         
         <!-- Navigation bar for dark mode -->
         <item name="android:navigationBarColor">@color/md_theme_surface</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>

@@ -29,12 +29,12 @@
     <color name="md_theme_onBackground">#E6E1E5</color>
     <color name="md_theme_surface">#1C1B1F</color>
     <color name="md_theme_onSurface">#E6E1E5</color>
-    <color name="md_theme_surface_variant">#49454F</color>
-    <color name="md_theme_onSurface_variant">#CAC4D0</color>
+    <color name="md_theme_surfaceVariant">#49454F</color>
+    <color name="md_theme_onSurfaceVariant">#CAC4D0</color>
 
     <!-- Outline - Dark Mode -->
     <color name="md_theme_outline">#938F99</color>
-    <color name="md_theme_outline_variant">#49454F</color>
+    <color name="md_theme_outlineVariant">#49454F</color>
 
     <!-- Tool colors - Dark Mode -->
     <color name="tool_selected_bg">#4F378B</color>

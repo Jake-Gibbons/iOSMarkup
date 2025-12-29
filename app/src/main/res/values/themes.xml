@@ -29,8 +29,8 @@
         <!-- Surface colors -->
         <item name="colorSurface">@color/md_theme_surface</item>
         <item name="colorOnSurface">@color/md_theme_onSurface</item>
-        <item name="colorSurfaceVariant">@color/md_theme_surface_variant</item>
-        <item name="colorOnSurfaceVariant">@color/md_theme_onSurface_variant</item>
+        <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
 
         <!-- Background -->
         <item name="android:colorBackground">@color/md_theme_background</item>
@@ -38,7 +38,7 @@
 
         <!-- Outline -->
         <item name="colorOutline">@color/md_theme_outline</item>
-        <item name="colorOutlineVariant">@color/md_theme_outline_variant</item>
+        <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
 
         <!-- Status bar - match app bar -->
         <item name="android:statusBarColor">@color/md_theme_primary</item>
@@ -46,10 +46,8 @@
 
         <!-- Navigation bar -->
         <item name="android:navigationBarColor">@color/md_theme_surface</item>
-        <item name="android:windowLightNavigationBar">true</item>
 
         <!-- System bar appearance -->
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 </resources>

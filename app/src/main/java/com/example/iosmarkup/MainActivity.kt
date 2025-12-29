@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
             btnEraser, btnText, btnSignature, btnShapes
         )
 
-        val unselectedBg = ContextCompat.getColor(this, R.color.md_theme_surface_variant)
+        val unselectedBg = ContextCompat.getColor(this, R.color.md_theme_surfaceVariant)
         val unselectedIcon = ContextCompat.getColor(this, R.color.tool_unselected_icon)
         val selectedBg = ContextCompat.getColor(this, R.color.tool_selected_bg)
         val selectedIcon = ContextCompat.getColor(this, R.color.tool_selected_icon)

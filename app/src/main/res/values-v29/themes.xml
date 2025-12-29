@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme additions for API 29+ (Android 10) -->
+    <style name="Theme.IosMarkup" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Navigation bar light mode (API 27+) -->
+        <item name="android:windowLightNavigationBar">true</item>
+        
+        <!-- Disable navigation bar contrast enforcement (API 29+) -->
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

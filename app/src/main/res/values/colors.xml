@@ -29,12 +29,12 @@
     <color name="md_theme_onBackground">#1C1B1F</color>
     <color name="md_theme_surface">#FFFBFE</color>
     <color name="md_theme_onSurface">#1C1B1F</color>
-    <color name="md_theme_surface_variant">#E7E0EC</color>
-    <color name="md_theme_onSurface_variant">#49454F</color>
+    <color name="md_theme_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_onSurfaceVariant">#49454F</color>
 
     <!-- Outline -->
     <color name="md_theme_outline">#79747E</color>
-    <color name="md_theme_outline_variant">#CAC4D0</color>
+    <color name="md_theme_outlineVariant">#CAC4D0</color>
 
     <!-- Tool colors -->
     <color name="tool_selected_bg">#E8DEF8</color>
