@@ -71,54 +71,80 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnPen"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
                             android:layout_margin="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             app:icon="@drawable/ic_tool_pen"
                             app:iconGravity="textStart"
                             app:iconPadding="0dp"
-                            app:iconSize="32dp"
+                            app:iconSize="28dp"
                             style="@style/Widget.Material3.Button.IconButton" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnMarker"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
                             android:layout_margin="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             app:icon="@drawable/ic_tool_marker"
                             app:iconGravity="textStart"
                             app:iconPadding="0dp"
-                            app:iconSize="32dp"
+                            app:iconSize="28dp"
                             style="@style/Widget.Material3.Button.IconButton" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnEraser"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
                             android:layout_margin="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             app:icon="@drawable/ic_tool_eraser"
                             app:iconGravity="textStart"
                             app:iconPadding="0dp"
-                            app:iconSize="32dp"
+                            app:iconSize="28dp"
+                            style="@style/Widget.Material3.Button.IconButton" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnText"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_margin="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:icon="@drawable/ic_tool_text"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconSize="28dp"
+                            style="@style/Widget.Material3.Button.IconButton" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSignature"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_margin="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:icon="@drawable/ic_tool_signature"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconSize="28dp"
                             style="@style/Widget.Material3.Button.IconButton" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnShapes"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
                             android:layout_margin="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             app:icon="@drawable/ic_tool_shapes"
                             app:iconGravity="textStart"
                             app:iconPadding="0dp"
-                            app:iconSize="32dp"
+                            app:iconSize="28dp"
                             style="@style/Widget.Material3.Button.IconButton" />
 
                     </LinearLayout>

@@ -104,4 +104,6 @@ object ValidationConstants {
     const val MIN_STROKE_WIDTH = 1f
     const val MAX_STROKE_WIDTH = 100f
     const val MAX_TEXT_LENGTH = 100
+    const val MIN_OPACITY = 0
+    const val MAX_OPACITY = 255
 }

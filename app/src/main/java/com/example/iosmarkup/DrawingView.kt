@@ -158,6 +158,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var currentTool = ToolType.PEN
     private var currentColor = Color.BLACK
     private var currentStrokeWidth = DrawingConstants.DEFAULT_STROKE_WIDTH
+    private var currentOpacity = 255
     var currentShapeType = ShapeType.RECTANGLE
     var isShapeFilled = false
     
@@ -213,6 +214,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     
     // State callback
     var onStateChanged: ((DrawingState) -> Unit)? = null
+
+    // Callback invoked when the TEXT tool is active and user taps canvas
+    var onTextPlacementRequested: ((x: Float, y: Float) -> Unit)? = null
     
     /**
      * Set canvas background color
@@ -364,6 +368,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             ToolType.ERASER -> eraseObjectAt(x, y)
             ToolType.SELECT -> selectObjectAt(x, y)
             ToolType.SHAPE -> startShapeDrag(x, y)
+            ToolType.TEXT -> onTextPlacementRequested?.invoke(x, y)
             else -> startDrawing(x, y)
         }
         
@@ -527,7 +532,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         
         drawingObjects.add(obj)
-        redoStack.clear() // Clear redo stack when new object is added
+        undoStack.clear() // Clear redo stack when new object is added
         notifyStateChanged()
     }
     
@@ -561,6 +566,11 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     
     fun setColor(color: Int) {
         currentColor = color
+        notifyStateChanged()
+    }
+    
+    fun setOpacity(opacity: Int) {
+        currentOpacity = opacity.coerceIn(0, 255)
         notifyStateChanged()
     }
     
@@ -602,9 +612,12 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     fun addText(text: String) {
         val point = floatArrayOf(width / 2f, height / 2f)
         inverseViewMatrix.mapPoints(point)
-        
+        addText(text, point[0], point[1])
+    }
+
+    fun addText(text: String, canvasX: Float, canvasY: Float) {
         val paint = createPaint(ToolType.TEXT, currentColor, currentStrokeWidth)
-        val textItem = DrawingObject.TextItem(text, point[0], point[1], paint)
+        val textItem = DrawingObject.TextItem(text, canvasX, canvasY, paint)
         
         addDrawingObject(textItem)
         invalidate()
@@ -675,6 +688,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 currentTool = currentTool,
                 currentColor = currentColor,
                 currentStrokeWidth = currentStrokeWidth,
+                currentOpacity = currentOpacity,
                 currentShapeType = currentShapeType,
                 isShapeFilled = isShapeFilled,
                 canUndo = canUndo(),
@@ -693,16 +707,19 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             when (type) {
                 ToolType.PEN -> {
                     style = Paint.Style.STROKE
+                    alpha = currentOpacity
                 }
                 ToolType.MARKER -> {
                     style = Paint.Style.STROKE
-                    alpha = 100
+                    // Marker is always semi-transparent; cap opacity at 40% of user setting
+                    alpha = (currentOpacity * 0.4f).toInt().coerceIn(10, 255)
                     xfermode = PorterDuffXfermode(PorterDuff.Mode.DARKEN)
                 }
                 ToolType.TEXT -> {
                     style = Paint.Style.FILL
-                    textSize = width * 5
+                    textSize = (width * 3f).coerceAtLeast(24f)
                     typeface = Typeface.DEFAULT_BOLD
+                    alpha = currentOpacity
                 }
                 else -> {}
             }
