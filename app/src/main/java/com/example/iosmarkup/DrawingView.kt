@@ -164,7 +164,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     
     // Drawing objects management
     private val drawingObjects = Collections.synchronizedList(ArrayList<DrawingObject>())
-    private val undoStack = Collections.synchronizedList(ArrayList<DrawingObject>())
+    // Stores objects removed by undo; cleared when new objects are drawn
     private val redoStack = Collections.synchronizedList(ArrayList<DrawingObject>())
     
     // Selection
@@ -236,7 +236,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         // Recycle all bitmaps
         drawingObjects.forEach { it.recycle() }
         drawingObjects.clear()
-        undoStack.clear()
         redoStack.clear()
         currentPath.reset()
         
@@ -532,7 +531,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         
         drawingObjects.add(obj)
-        undoStack.clear() // Clear undo history when new object is added (redo no longer possible)
+        redoStack.clear() // Clear redo stack when new object is added
         notifyStateChanged()
     }
     
@@ -591,15 +590,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     fun undo() {
         if (drawingObjects.isNotEmpty()) {
             val removed = drawingObjects.removeLast()
-            undoStack.add(removed)
+            redoStack.add(removed)
             notifyStateChanged()
             invalidate()
         }
     }
     
     fun redo() {
-        if (undoStack.isNotEmpty()) {
-            val restored = undoStack.removeLast()
+        if (redoStack.isNotEmpty()) {
+            val restored = redoStack.removeLast()
             drawingObjects.add(restored)
             notifyStateChanged()
             invalidate()
@@ -607,7 +606,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
     
     fun canUndo(): Boolean = drawingObjects.isNotEmpty()
-    fun canRedo(): Boolean = undoStack.isNotEmpty()
+    fun canRedo(): Boolean = redoStack.isNotEmpty()
     
     fun addText(text: String) {
         val point = floatArrayOf(width / 2f, height / 2f)
@@ -744,10 +743,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         synchronized(drawingObjects) {
             drawingObjects.forEach { it.recycle() }
             drawingObjects.clear()
-        }
-        synchronized(undoStack) {
-            undoStack.forEach { it.recycle() }
-            undoStack.clear()
         }
         synchronized(redoStack) {
             redoStack.forEach { it.recycle() }
