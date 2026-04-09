@@ -94,8 +94,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="α"
-                    android:textSize="14sp"
+                    android:text="Opacity"
+                    android:textSize="12sp"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.slider.Slider
@@ -111,10 +111,12 @@
                     app:labelBehavior="gone" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="32dp"
                     android:layout_height="wrap_content"
-                    android:text="α"
-                    android:textSize="18sp"
+                    android:id="@+id/tvOpacityValue"
+                    android:text="100%"
+                    android:textSize="12sp"
+                    android:gravity="end"
                     android:textColor="?attr/colorOnSurfaceVariant" />
             </LinearLayout>
 

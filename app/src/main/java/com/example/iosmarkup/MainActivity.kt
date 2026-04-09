@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: MaterialToolbar
     private lateinit var strokeSlider: Slider
     private lateinit var opacitySlider: Slider
+    private lateinit var tvOpacityValue: android.widget.TextView
 
     // Tool buttons
     private lateinit var btnSelect: MaterialButton
@@ -135,6 +136,7 @@ class MainActivity : AppCompatActivity() {
         toolbar = findViewById(R.id.topAppBar)
         strokeSlider = findViewById(R.id.strokeSlider)
         opacitySlider = findViewById(R.id.opacitySlider)
+        tvOpacityValue = findViewById(R.id.tvOpacityValue)
         colorContainer = findViewById(R.id.colorContainer)
         btnCustomColor = findViewById(R.id.btnColorCustom)
 
@@ -255,6 +257,8 @@ class MainActivity : AppCompatActivity() {
     private fun setupOpacitySlider() {
         opacitySlider.addOnChangeListener { _, value, _ ->
             drawingView.setOpacity(value.toInt())
+            val percent = ((value / 255f) * 100).toInt()
+            tvOpacityValue.text = "$percent%"
         }
     }
 

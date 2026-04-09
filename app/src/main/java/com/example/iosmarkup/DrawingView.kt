@@ -532,7 +532,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         
         drawingObjects.add(obj)
-        undoStack.clear() // Clear redo stack when new object is added
+        undoStack.clear() // Clear undo history when new object is added (redo no longer possible)
         notifyStateChanged()
     }
     
@@ -711,8 +711,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 }
                 ToolType.MARKER -> {
                     style = Paint.Style.STROKE
-                    // Marker is always semi-transparent; cap opacity at 40% of user setting
-                    alpha = (currentOpacity * 0.4f).toInt().coerceIn(10, 255)
+                    // Marker is always semi-transparent; cap opacity at a fraction of user setting
+                    alpha = (currentOpacity * DrawingConstants.MARKER_OPACITY_MULTIPLIER).toInt().coerceIn(10, 255)
                     xfermode = PorterDuffXfermode(PorterDuff.Mode.DARKEN)
                 }
                 ToolType.TEXT -> {
