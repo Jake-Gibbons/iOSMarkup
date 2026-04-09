@@ -40,6 +40,8 @@ class ShareActivity : AppCompatActivity() {
     private lateinit var btnPen: MaterialButton
     private lateinit var btnMarker: MaterialButton
     private lateinit var btnEraser: MaterialButton
+    private lateinit var btnText: MaterialButton
+    private lateinit var btnSignature: MaterialButton
     private lateinit var btnShapes: MaterialButton
 
     private var sharedImageUri: Uri? = null
@@ -96,6 +98,8 @@ class ShareActivity : AppCompatActivity() {
         btnPen = findViewById(R.id.btnPen)
         btnMarker = findViewById(R.id.btnMarker)
         btnEraser = findViewById(R.id.btnEraser)
+        btnText = findViewById(R.id.btnText)
+        btnSignature = findViewById(R.id.btnSignature)
         btnShapes = findViewById(R.id.btnShapes)
     }
 
@@ -147,8 +151,23 @@ class ShareActivity : AppCompatActivity() {
             updateToolUI(btnEraser)
         }
 
+        btnText.setOnClickListener {
+            drawingView.setTool(ToolType.TEXT)
+            updateToolUI(btnText)
+            showToast("Tap on canvas to place text")
+        }
+
+        btnSignature.setOnClickListener {
+            showSignatureDialog()
+        }
+
         btnShapes.setOnClickListener { view ->
             showShapesMenu(view)
+        }
+
+        // Wire canvas tap → text dialog
+        drawingView.onTextPlacementRequested = { canvasX, canvasY ->
+            showAddTextDialog(canvasX, canvasY)
         }
 
         // Start with pen tool
@@ -196,7 +215,7 @@ class ShareActivity : AppCompatActivity() {
     }
 
     private fun updateToolUI(selectedButton: MaterialButton) {
-        listOf(btnPen, btnMarker, btnEraser, btnShapes).forEach { btn ->
+        listOf(btnPen, btnMarker, btnEraser, btnText, btnSignature, btnShapes).forEach { btn ->
             btn.backgroundTintList = if (btn == selectedButton) {
                 android.content.res.ColorStateList.valueOf(
                     getColor(com.google.android.material.R.color.material_dynamic_primary30)
@@ -276,21 +295,70 @@ class ShareActivity : AppCompatActivity() {
         }
     }
 
+    private fun showAddTextDialog(canvasX: Float? = null, canvasY: Float? = null) {
+        val input = EditText(this).apply {
+            hint = "Enter text"
+            maxLines = 3
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Add Text")
+            .setView(input)
+            .setPositiveButton("Add") { _, _ ->
+                val text = input.text.toString().trim()
+                when {
+                    text.isEmpty() -> showToast("Text cannot be empty")
+                    text.length > ValidationConstants.MAX_TEXT_LENGTH -> {
+                        showToast("Text too long (max ${ValidationConstants.MAX_TEXT_LENGTH} characters)")
+                    }
+                    text.contains(Regex("[\\p{C}]")) -> {
+                        showToast("Text contains invalid characters")
+                    }
+                    else -> {
+                        if (canvasX != null && canvasY != null) {
+                            drawingView.addText(text, canvasX, canvasY)
+                        } else {
+                            drawingView.addText(text)
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showSignatureDialog() {
+        SignatureDialog(this) { bitmap ->
+            drawingView.addSignature(bitmap)
+        }.show()
+    }
+
     private fun saveAndShare() {
         lifecycleScope.launch {
             val bitmap = drawingView.getBitmap()
             try {
                 val format = settingsRepo.getExportFormat()
-                val location = settingsRepo.getSaveLocation()
-                
-                when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
-                    is SaveResult.Success -> {
-                        showToast("Saved: ${result.filePath}")
-                        finish()
+
+                // Save to cache for sharing
+                val uri = fileOps.saveToCacheAndGetUri(bitmap, format)
+                if (uri != null) {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = format.mimeType
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    is SaveResult.Error -> {
-                        val message = fileOps.getSaveErrorMessage(result)
-                        showToast(message)
+                    startActivity(Intent.createChooser(shareIntent, "Share Annotated Image"))
+                } else {
+                    // Fallback: save to gallery
+                    val location = settingsRepo.getSaveLocation()
+                    when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
+                        is SaveResult.Success -> {
+                            showToast("Saved: ${result.filePath}")
+                            finish()
+                        }
+                        is SaveResult.Error -> {
+                            showToast(fileOps.getSaveErrorMessage(result))
+                        }
                     }
                 }
             } finally {

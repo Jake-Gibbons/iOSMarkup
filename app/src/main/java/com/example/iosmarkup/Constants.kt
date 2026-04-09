@@ -42,6 +42,9 @@ object DrawingConstants {
     const val MODE_DRAG = 1
     const val MODE_TRANSFORM = 2
     const val MODE_ZOOM = 3
+
+    // Marker tool: semi-transparency multiplier applied to current opacity
+    const val MARKER_OPACITY_MULTIPLIER = 0.4f
 }
 
 object UIConstants {

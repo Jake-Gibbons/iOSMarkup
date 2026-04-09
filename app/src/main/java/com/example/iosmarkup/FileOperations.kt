@@ -122,6 +122,40 @@ class FileOperations(private val context: Context) {
     }
     
     /**
+     * Save a bitmap to the app's cache directory and return a shareable URI.
+     * The returned URI can be used with Intent.FLAG_GRANT_READ_URI_PERMISSION.
+     * Returns null on failure.
+     */
+    suspend fun saveToCacheAndGetUri(bitmap: Bitmap, format: ExportFormat): android.net.Uri? =
+        withContext(Dispatchers.IO) {
+            try {
+                val cacheDir = java.io.File(context.cacheDir, "shared_images").also { it.mkdirs() }
+                val filename = "${FileConstants.FILENAME_PREFIX}${System.currentTimeMillis()}.${format.extension}"
+                val file = java.io.File(cacheDir, filename)
+
+                val compressFormat = when (format) {
+                    ExportFormat.PNG -> Bitmap.CompressFormat.PNG
+                    ExportFormat.JPEG -> Bitmap.CompressFormat.JPEG
+                }
+                val quality = when (format) {
+                    ExportFormat.PNG -> FileConstants.PNG_QUALITY
+                    ExportFormat.JPEG -> FileConstants.JPEG_QUALITY
+                }
+
+                file.outputStream().use { bitmap.compress(compressFormat, quality, it) }
+
+                androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    file
+                )
+            } catch (e: Exception) {
+                Log.e(LogTags.FILE_OPS, "Failed to save to cache", e)
+                null
+            }
+        }
+
+    /**
      * Get a user-friendly error message for a save error
      */
     fun getSaveErrorMessage(error: SaveResult.Error): String {

@@ -48,6 +48,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var colorContainer: LinearLayout
     private lateinit var toolbar: MaterialToolbar
     private lateinit var strokeSlider: Slider
+    private lateinit var opacitySlider: Slider
+    private lateinit var tvOpacityValue: android.widget.TextView
 
     // Tool buttons
     private lateinit var btnSelect: MaterialButton
@@ -110,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         setupTools()
         setupColorPalette()
         setupStrokeSlider()
+        setupOpacitySlider()
 
         // Apply settings
         applySettings()
@@ -132,6 +135,8 @@ class MainActivity : AppCompatActivity() {
         drawingView = findViewById(R.id.drawingView)
         toolbar = findViewById(R.id.topAppBar)
         strokeSlider = findViewById(R.id.strokeSlider)
+        opacitySlider = findViewById(R.id.opacitySlider)
+        tvOpacityValue = findViewById(R.id.tvOpacityValue)
         colorContainer = findViewById(R.id.colorContainer)
         btnCustomColor = findViewById(R.id.btnColorCustom)
 
@@ -148,10 +153,11 @@ class MainActivity : AppCompatActivity() {
         btnPen.contentDescription = "Pen tool - draw with solid lines"
         btnMarker.contentDescription = "Marker tool - draw with semi-transparent strokes"
         btnEraser.contentDescription = "Eraser tool - tap objects to remove them"
-        btnText.contentDescription = "Text tool - add text to your drawing"
+        btnText.contentDescription = "Text tool - tap canvas to place text"
         btnSignature.contentDescription = "Signature tool - add your signature"
         btnShapes.contentDescription = "Shapes tool - draw rectangles, ovals, lines, and arrows"
         strokeSlider.contentDescription = "Stroke width slider - adjust drawing line thickness"
+        opacitySlider.contentDescription = "Opacity slider - adjust drawing transparency"
         drawingView.contentDescription = "Drawing canvas - touch to draw"
         btnCustomColor.contentDescription = "Add custom color to palette"
     }
@@ -190,6 +196,11 @@ class MainActivity : AppCompatActivity() {
             // Update UI based on drawing state
             updateUndoRedoButtons(state.canUndo, state.canRedo)
         }
+
+        // When TEXT tool is active, canvas tap triggers text placement dialog
+        drawingView.onTextPlacementRequested = { canvasX, canvasY ->
+            showAddTextDialog(canvasX, canvasY)
+        }
     }
 
     private fun setupTools() {
@@ -214,8 +225,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnText.setOnClickListener {
-            showAddTextDialog()
+            drawingView.setTool(ToolType.TEXT)
             updateToolUI(btnText)
+            showToast("Tap on canvas to place text")
         }
 
         btnSignature.setOnClickListener {
@@ -239,6 +251,14 @@ class MainActivity : AppCompatActivity() {
     private fun setupStrokeSlider() {
         strokeSlider.addOnChangeListener { _, value, _ ->
             drawingView.setStrokeWidth(value)
+        }
+    }
+
+    private fun setupOpacitySlider() {
+        opacitySlider.addOnChangeListener { _, value, _ ->
+            drawingView.setOpacity(value.toInt())
+            val percent = ((value / 255f) * 100).toInt()
+            tvOpacityValue.text = "$percent%"
         }
     }
 
@@ -386,7 +406,7 @@ class MainActivity : AppCompatActivity() {
         drawingView.isShapeFilled = filled
     }
 
-    private fun showAddTextDialog() {
+    private fun showAddTextDialog(canvasX: Float? = null, canvasY: Float? = null) {
         val input = EditText(this).apply {
             hint = "Enter text"
             maxLines = 3
@@ -406,7 +426,11 @@ class MainActivity : AppCompatActivity() {
                         showToast("Text contains invalid control characters")
                     }
                     else -> {
-                        drawingView.addText(text)
+                        if (canvasX != null && canvasY != null) {
+                            drawingView.addText(text, canvasX, canvasY)
+                        } else {
+                            drawingView.addText(text)
+                        }
                         drawingView.setTool(ToolType.SELECT)
                         updateToolUI(btnSelect)
                     }
@@ -546,7 +570,7 @@ class MainActivity : AppCompatActivity() {
 
                 when (val result = fileOps.saveImageToGallery(bitmap, format, location)) {
                     is SaveResult.Success -> {
-                        showToast("Saved: ${result.filePath}")
+                        showSaveSuccessDialog(result.filePath, format)
                     }
                     is SaveResult.Error -> {
                         val message = fileOps.getSaveErrorMessage(result)
@@ -560,6 +584,37 @@ class MainActivity : AppCompatActivity() {
                 }
             } finally {
                 // Always recycle bitmap to prevent memory leaks
+                bitmap.recycle()
+            }
+        }
+    }
+
+    private fun showSaveSuccessDialog(filePath: String, format: ExportFormat) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Image Saved")
+            .setMessage("Saved as $filePath")
+            .setPositiveButton("Share") { _, _ ->
+                shareCurrentDrawing(format)
+            }
+            .setNegativeButton("OK", null)
+            .show()
+    }
+
+    private fun shareCurrentDrawing(format: ExportFormat) {
+        lifecycleScope.launch {
+            val bitmap = drawingView.getBitmap()
+            try {
+                val uri = fileOps.saveToCacheAndGetUri(bitmap, format) ?: run {
+                    showToast("Could not prepare image for sharing")
+                    return@launch
+                }
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = format.mimeType
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(shareIntent, "Share via"))
+            } finally {
                 bitmap.recycle()
             }
         }

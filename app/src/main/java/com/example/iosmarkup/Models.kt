@@ -69,6 +69,7 @@ data class DrawingState(
     val currentTool: ToolType = ToolType.PEN,
     val currentColor: Int = android.graphics.Color.BLACK,
     val currentStrokeWidth: Float = DrawingConstants.DEFAULT_STROKE_WIDTH,
+    val currentOpacity: Int = 255,
     val currentShapeType: ShapeType = ShapeType.RECTANGLE,
     val isShapeFilled: Boolean = false,
     val canUndo: Boolean = false,
